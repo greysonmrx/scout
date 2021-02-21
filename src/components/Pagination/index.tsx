@@ -50,7 +50,7 @@ const Pagination: React.FC<PaginationProps> = ({
       </p>
       <div>
         <p>
-          Total por página:
+          Limite por página:
           {' '}
           <strong>
             {per_page}
