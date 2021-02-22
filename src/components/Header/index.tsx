@@ -26,6 +26,11 @@ const Header: React.FC = () => {
               <Item isActive={pathName === 'clubs'}>Times</Item>
             </Link>
           </li>
+          <li>
+            <Link to="/positions">
+              <Item isActive={pathName === 'positions'}>Posições</Item>
+            </Link>
+          </li>
         </ul>
       </Wrapper>
     </Container>
