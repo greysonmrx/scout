@@ -9,6 +9,8 @@ import { defaultTheme } from './styles/theme';
 
 import DefaultLayout from './layouts/Default';
 
+import AppProvider from './hooks';
+
 import Routes from './routes';
 
 const mainElement = document.createElement('div');
@@ -25,10 +27,12 @@ const App: React.FC = () => (
           rel="stylesheet"
         />
       </Helmet>
-      <DefaultLayout>
-        <Routes />
-      </DefaultLayout>
-      <GlobalStyle />
+      <AppProvider>
+        <DefaultLayout>
+          <Routes />
+        </DefaultLayout>
+        <GlobalStyle />
+      </AppProvider>
     </ThemeProvider>
   </BrowserRouter>
 );
