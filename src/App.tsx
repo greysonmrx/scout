@@ -23,7 +23,7 @@ const App: React.FC = () => (
         <title>Scout</title>
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </Helmet>

@@ -22,7 +22,7 @@ export const GlobalStyle = createGlobalStyle`
     font-weight: 600;
   }
 
-  ul {
+  ul, li {
     list-style: none;
   }
 
