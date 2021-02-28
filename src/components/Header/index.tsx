@@ -6,7 +6,7 @@ import { Container, Wrapper, Item } from './styles';
 const Header: React.FC = () => {
   const location = useLocation();
 
-  const [pathName, setPathName] = useState('');
+  const [pathName, setPathName] = useState('players');
 
   useEffect(() => {
     setPathName(location.pathname.split('/')[1]);
@@ -17,8 +17,8 @@ const Header: React.FC = () => {
       <Wrapper>
         <ul>
           <li>
-            <Link to="/">
-              <Item isActive={pathName === ''}>Jogadores</Item>
+            <Link to="/players">
+              <Item isActive={pathName === 'players'}>Jogadores</Item>
             </Link>
           </li>
           <li>

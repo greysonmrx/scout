@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useTheme } from 'styled-components';
 import { FiSearch } from 'react-icons/fi';
+import { useHistory } from 'react-router-dom';
 
 import MenuTable from '../../components/MenuTable';
 import Button from '../../components/Button';
@@ -22,6 +23,7 @@ import {
 
 const Players: React.FC = () => {
   const theme = useTheme();
+  const history = useHistory();
 
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -121,6 +123,14 @@ const Players: React.FC = () => {
     return theme.colors.red.error;
   }, []);
 
+  // const handleViewPlayerDetails = useCallback((player_id: number) => {
+  //   history.push(`/players/details/${player_id}`);
+  // }, []);
+
+  const handleViewPlayerDetails = (player_id: number) => {
+    history.push(`/players/details/${player_id}`);
+  };
+
   return (
     <Container>
       <Wrapper>
@@ -198,9 +208,7 @@ const Players: React.FC = () => {
                   <Actions>
                     <button
                       type="button"
-                      onClick={() => {
-                      /* Mano */
-                      }}
+                      onClick={() => handleViewPlayerDetails(player.id)}
                     >
                       Visualizar
                     </button>
