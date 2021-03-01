@@ -7,10 +7,13 @@ const Radar: React.FC<ChartComponentProps> = ({ ...props }) => {
 
   return (
     <Chart
+      redraw
       options={{
         scale: {
           ticks: {
             display: false,
+            max: 20,
+            min: 0,
           },
           gridLines: {
             lineWidth: 2,

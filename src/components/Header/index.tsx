@@ -31,6 +31,11 @@ const Header: React.FC = () => {
               <Item isActive={pathName === 'positions'}>Posições</Item>
             </Link>
           </li>
+          <li>
+            <Link to="/comparison">
+              <Item isActive={pathName === 'comparison'}>Comparação</Item>
+            </Link>
+          </li>
         </ul>
       </Wrapper>
     </Container>
