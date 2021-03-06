@@ -14,7 +14,7 @@ export const GlobalStyle = createGlobalStyle`
     background: ${(props) => props.theme.colors.background};
   }
 
-  body, input, button {
+  body, input, button, textarea {
     font: 400 16px 'Exo 2', sans-serif;
   }
 
