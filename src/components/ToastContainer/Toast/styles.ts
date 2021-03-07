@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { animated } from 'react-spring';
+import { darken } from 'polished';
 
 interface TostProps {
   type?: 'success' | 'error' | 'warn' | 'info';
@@ -68,8 +69,9 @@ export const Container = styled(animated.div)<TostProps>`
         color: ${({ theme }) => theme.colors.black};
         font-weight: 600;
       }
+
       p {
-        color: ${({ theme }) => theme.colors.lightGrey};
+        color: ${({ theme }) => darken(0.2, theme.colors.lightGrey)};
         font-size: 15px;
       }
     }

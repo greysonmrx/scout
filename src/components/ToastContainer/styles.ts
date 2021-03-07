@@ -9,4 +9,5 @@ export const Container = styled.div`
   padding: 30px;
   overflow: hidden;
   align-items: flex-end;
+  z-index: 99999999;
 `;
