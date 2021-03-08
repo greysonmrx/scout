@@ -30,6 +30,9 @@
     "camelcase": "off",
     "react/jsx-props-no-spreading": "off",
     "import/prefer-default-export": "off",
+    "react/require-default-props": "off",
+    "no-unused-expressions": "off",
+    "no-template-curly-in-string": "off",
     "react/jsx-filename-extension": [
       1,
       {

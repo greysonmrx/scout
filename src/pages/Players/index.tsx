@@ -25,7 +25,6 @@ const Players: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
 
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('per_player');
   const [pagination, setPagination] = useState({
@@ -123,20 +122,20 @@ const Players: React.FC = () => {
     return theme.colors.red.error;
   }, []);
 
-  // const handleViewPlayerDetails = useCallback((player_id: number) => {
-  //   history.push(`/players/details/${player_id}`);
-  // }, []);
+  const handleGoToPage = useCallback((path: string) => {
+    history.push(path);
+  }, []);
 
-  const handleViewPlayerDetails = (player_id: number) => {
-    history.push(`/players/details/${player_id}`);
-  };
+  const handleViewPlayerDetails = useCallback((player_id: number) => {
+    handleGoToPage(`/players/details/${player_id}`);
+  }, [handleGoToPage]);
 
   return (
     <Container>
       <Wrapper>
         <Top>
           <h1>Gerenciando jogadores</h1>
-          <Button loading={loading} onClick={() => setLoading(!loading)}>
+          <Button onClick={() => handleGoToPage('/players/create')}>
             Cadastrar jogadores
           </Button>
         </Top>
