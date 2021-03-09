@@ -11,6 +11,7 @@ import CreateClub from './pages/CreateClub';
 import EditClub from './pages/EditClub';
 
 import Positions from './pages/Positions';
+import CreatePosition from './pages/CreatePosition';
 
 import Comparison from './pages/Comparison';
 
@@ -26,6 +27,7 @@ const Routes: React.FC = () => (
     <Route path="/clubs/edit/:id" exact component={EditClub} />
 
     <Route path="/positions" exact component={Positions} />
+    <Route path="/positions/create" exact component={CreatePosition} />
 
     <Route path="/comparison" exact component={Comparison} />
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
+import { useHistory } from 'react-router-dom';
 
 import Button from '../../components/Button';
 import MenuTable from '../../components/MenuTable';
@@ -14,6 +15,8 @@ import {
 } from './styles';
 
 const Positions: React.FC = () => {
+  const history = useHistory();
+
   const [filter, setFilter] = useState('per_position');
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -57,12 +60,16 @@ const Positions: React.FC = () => {
     }
   }, [filter]);
 
+  const handleGoToPage = useCallback((path: string) => {
+    history.push(path);
+  }, [history]);
+
   return (
     <Container>
       <Wrapper>
         <Top>
           <h1>Gerenciando posições</h1>
-          <Button>
+          <Button onClick={() => handleGoToPage('/positions/create')}>
             Cadastrar posições
           </Button>
         </Top>
