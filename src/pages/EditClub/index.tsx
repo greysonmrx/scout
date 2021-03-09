@@ -19,9 +19,14 @@ type FormData = {
   shield: File;
 }
 
-const CreateClub: React.FC = () => {
+const EditClub: React.FC = () => {
   const history = useHistory();
   const formRef = useRef<FormHandles>(null);
+
+  const initialData = {
+    shield: 'http://localhost:5000/files/barcelona.png',
+    name: 'Barcelona',
+  };
 
   const { addToast } = useToast();
 
@@ -41,14 +46,10 @@ const CreateClub: React.FC = () => {
     })
       .then(() => {
         if (data.shield) {
-          console.log(data);
-        } else {
-          addToast({
-            title: 'Ocorreu um erro!',
-            type: 'error',
-            description: 'Preencha todo o formulário.',
-          });
+          console.log('Upload new shield club');
         }
+
+        console.log(data);
       }).catch((err) => {
         const validationErrors = {};
 
@@ -77,9 +78,9 @@ const CreateClub: React.FC = () => {
   return (
     <Container>
       <Wrapper>
-        <Form ref={formRef} onSubmit={handleSubmit}>
+        <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
           <Top>
-            <h1>Cadastro de times</h1>
+            <h1>Edição de times</h1>
             <div>
               <Button type="button" onClick={handleGoBack}>Voltar</Button>
               <Button type="submit" loading={loading}>Salvar time</Button>
@@ -106,4 +107,4 @@ const CreateClub: React.FC = () => {
   );
 };
 
-export default CreateClub;
+export default EditClub;

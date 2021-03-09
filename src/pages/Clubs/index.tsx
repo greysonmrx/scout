@@ -125,9 +125,7 @@ const Clubs: React.FC = () => {
                   <Actions>
                     <button
                       type="button"
-                      onClick={() => {
-                      /* Mano */
-                      }}
+                      onClick={() => handleGoToPage(`/clubs/edit/${club.id}`)}
                     >
                       Editar
                     </button>

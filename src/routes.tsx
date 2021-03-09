@@ -2,13 +2,17 @@ import React from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom';
 
 import Players from './pages/Players';
-import Clubs from './pages/Clubs';
-import Positions from './pages/Positions';
-import PlayerDetails from './pages/PlayerDetails';
-import Comparison from './pages/Comparison';
 import CreatePlayer from './pages/CreatePlayer';
+import PlayerDetails from './pages/PlayerDetails';
 import EditPlayer from './pages/EditPlayer';
+
+import Clubs from './pages/Clubs';
 import CreateClub from './pages/CreateClub';
+import EditClub from './pages/EditClub';
+
+import Positions from './pages/Positions';
+
+import Comparison from './pages/Comparison';
 
 const Routes: React.FC = () => (
   <Switch>
@@ -19,6 +23,7 @@ const Routes: React.FC = () => (
 
     <Route path="/clubs" exact component={Clubs} />
     <Route path="/clubs/create" exact component={CreateClub} />
+    <Route path="/clubs/edit/:id" exact component={EditClub} />
 
     <Route path="/positions" exact component={Positions} />
 
