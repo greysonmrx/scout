@@ -8,6 +8,7 @@ import PlayerDetails from './pages/PlayerDetails';
 import Comparison from './pages/Comparison';
 import CreatePlayer from './pages/CreatePlayer';
 import EditPlayer from './pages/EditPlayer';
+import CreateClub from './pages/CreateClub';
 
 const Routes: React.FC = () => (
   <Switch>
@@ -17,6 +18,7 @@ const Routes: React.FC = () => (
     <Route path="/players/edit/:id" exact component={EditPlayer} />
 
     <Route path="/clubs" exact component={Clubs} />
+    <Route path="/clubs/create" exact component={CreateClub} />
 
     <Route path="/positions" exact component={Positions} />
 

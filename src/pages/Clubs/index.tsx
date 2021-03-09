@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
+import { useHistory } from 'react-router-dom';
 
 import Button from '../../components/Button';
 import MenuTable from '../../components/MenuTable';
@@ -14,6 +15,8 @@ import {
 } from './styles';
 
 const Clubs: React.FC = () => {
+  const history = useHistory();
+
   const [filter, setFilter] = useState('per_club');
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({
@@ -62,12 +65,16 @@ const Clubs: React.FC = () => {
     }
   }, [filter]);
 
+  const handleGoToPage = useCallback((path: string) => {
+    history.push(path);
+  }, []);
+
   return (
     <Container>
       <Wrapper>
         <Top>
           <h1>Gerenciando times</h1>
-          <Button>
+          <Button onClick={() => handleGoToPage('/clubs/create')}>
             Cadastrar times
           </Button>
         </Top>

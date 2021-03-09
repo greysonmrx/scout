@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Yup from 'yup';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { render } from 'react-dom';
@@ -15,6 +16,16 @@ import Routes from './routes';
 
 const mainElement = document.createElement('div');
 document.body.appendChild(mainElement);
+
+Yup.setLocale({
+  mixed: {
+    required: 'Este campo é obrigatório',
+  },
+  number: {
+    min: 'Precisa ser maior ou igual a ${min}',
+    max: 'Precisa ser menor ou igual a ${max}',
+  },
+});
 
 const App: React.FC = () => (
   <BrowserRouter>

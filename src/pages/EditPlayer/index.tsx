@@ -150,16 +150,6 @@ const EditPlayer: React.FC = () => {
     setLoading(true);
     formRef.current?.setErrors({});
 
-    Yup.setLocale({
-      mixed: {
-        default: 'Não é válido',
-      },
-      number: {
-        min: 'Precisa ser maior ou igual a ${min}',
-        max: 'Precisa ser menor ou igual a ${max}',
-      },
-    });
-
     const schema = Yup.object().shape({
       player: Yup.object().shape({
         name: Yup.string().required(FormErrors.REQUIRED),

@@ -85,17 +85,8 @@ const CreatePlayer: React.FC = () => {
 
   function handleSubmit(data: FormData) {
     setLoading(true);
-    formRef.current?.setErrors({});
 
-    Yup.setLocale({
-      mixed: {
-        default: 'Não é válido',
-      },
-      number: {
-        min: 'Precisa ser maior ou igual a ${min}',
-        max: 'Precisa ser menor ou igual a ${max}',
-      },
-    });
+    formRef.current?.setErrors({});
 
     const schema = Yup.object().shape({
       player: Yup.object().shape({
@@ -345,7 +336,7 @@ const CreatePlayer: React.FC = () => {
       <Wrapper>
         <Form ref={formRef} onSubmit={handleSubmit}>
           <Top>
-            <h1>Cadastrar de jogadores</h1>
+            <h1>Cadastro de jogadores</h1>
             <div>
               <Button type="button" onClick={handleGoBack}>Voltar</Button>
               <Button type="submit" loading={loading}>Salvar jogador</Button>
