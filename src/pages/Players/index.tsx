@@ -213,9 +213,7 @@ const Players: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        /* Mano */
-                      }}
+                      onClick={() => handleGoToPage(`/players/edit/${player.id}`)}
                     >
                       Editar
                     </button>

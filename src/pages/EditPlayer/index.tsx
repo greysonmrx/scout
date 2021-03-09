@@ -72,15 +72,78 @@ type FormData = {
   };
 };
 
-const CreatePlayer: React.FC = () => {
+const EditPlayer: React.FC = () => {
   const history = useHistory();
   const formRef = useRef<FormHandles>(null);
 
   const { addToast } = useToast();
 
-  const [position, setPosition] = useState<number>();
-  const [preferredFoot, setPreferredFoot] = useState<string>();
-  const [club, setClub] = useState<number>();
+  const initialData = {
+    player: {
+      name: 'Lionel Messi',
+      avatar: 'http://localhost:5000/files/messi.png',
+      club: {
+        id: 2,
+        name: 'Barcelona',
+      },
+      birth_date: '1987-06-24',
+      position: {
+        id: 1,
+        name: 'Ponta Esquerda',
+      },
+      preferred_footer: 'Direito',
+      height: 184,
+      weight: 83,
+      heat_map: 'http://localhost:5000/files/mapa.png',
+      note: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris blandit ornare porta. Duis posuere nibh velit, eu fermentum ante accumsan vel. Etiam urna est, consectetur sed varius sed, volutpat vitae sapien. Integer gravida non est sit amet pharetra. Nullam suscipit sollicitudin porttitor. Etiam bibendum nisi quam. Phasellus quis dolor quis est pellentesque porta eu non nunc. Curabitur lobortis ornare tempor. Cras aliquet nunc a purus tempor sollicitudin. Phasellus tempus commodo leo ullamcorper scelerisque. Integer quis ullamcorper risus, sit amet vestibulum eros.',
+    },
+    technical_attributes: {
+      heading: 17,
+      corners: 13,
+      crossing: 14,
+      tackling: 8,
+      finishing: 19,
+      dribbling: 18,
+      long_throws: 11,
+      free_kick_taking: 16,
+      marking: 5,
+      penalty_taking: 18,
+      passing: 14,
+      first_touch: 16,
+      long_shots: 18,
+      technique: 18,
+    },
+    mental_attributes: {
+      aggression: 9,
+      anticipation: 17,
+      bravery: 15,
+      composure: 15,
+      concentration: 15,
+      decisions: 15,
+      determination: 20,
+      flair: 18,
+      leadership: 15,
+      off_the_ball: 18,
+      positioning: 6,
+      teamwork: 10,
+      vision: 14,
+      work_rate: 12,
+    },
+    physical_attributes: {
+      stamina: 17,
+      acceleration: 15,
+      agillity: 13,
+      natural_fitness: 18,
+      balance: 10,
+      strength: 18,
+      jumping_reach: 16,
+      pace: 19,
+    },
+  };
+
+  const [position, setPosition] = useState<number>(initialData.player.position.id);
+  const [preferredFoot, setPreferredFoot] = useState<string>(initialData.player.preferred_footer);
+  const [club, setClub] = useState<number>(initialData.player.club.id);
   const [loading, setLoading] = useState(false);
 
   function handleSubmit(data: FormData) {
@@ -298,23 +361,20 @@ const CreatePlayer: React.FC = () => {
     }).then(() => {
       const { player } = data;
 
-      if (
-        player.avatar
-          && player.heat_map
-          && position
-          && preferredFoot
-          && club
-      ) {
-        console.log(data);
-
-        // Store player
-      } else {
-        addToast({
-          title: 'Ocorreu um erro!',
-          type: 'error',
-          description: 'Preencha todo o formulário.',
-        });
+      if (player.avatar) {
+        console.log('Upload new player avatar');
       }
+
+      if (player.heat_map) {
+        console.log('Upload new player heat map');
+      }
+
+      console.log(data);
+      console.log(position);
+      console.log(preferredFoot);
+      console.log(club);
+
+      // Store player
     }).catch((err) => {
       const validationErrors = {};
 
@@ -343,9 +403,9 @@ const CreatePlayer: React.FC = () => {
   return (
     <Container>
       <Wrapper>
-        <Form ref={formRef} onSubmit={handleSubmit}>
+        <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
           <Top>
-            <h1>Cadastrar de jogadores</h1>
+            <h1>Edição de jogadores</h1>
             <div>
               <Button type="button" onClick={handleGoBack}>Voltar</Button>
               <Button type="submit" loading={loading}>Salvar jogador</Button>
@@ -377,6 +437,10 @@ const CreatePlayer: React.FC = () => {
                   label="Posição"
                   onChange={({ value }) => setPosition(value)}
                   placeholder="Selecione uma posição"
+                  defaultValue={{
+                    value: initialData.player.position.id,
+                    label: initialData.player.position.name,
+                  }}
                   options={[
                     {
                       value: 1,
@@ -409,6 +473,10 @@ const CreatePlayer: React.FC = () => {
                   label="Time"
                   onChange={({ value }) => setClub(value)}
                   placeholder="Selecione um time"
+                  defaultValue={{
+                    value: initialData.player.club.id,
+                    label: initialData.player.club.name,
+                  }}
                   options={[
                     {
                       value: 1,
@@ -433,6 +501,10 @@ const CreatePlayer: React.FC = () => {
                   label="Pé preferido"
                   onChange={({ value }) => setPreferredFoot(value)}
                   placeholder="Selecione o pé preferido"
+                  defaultValue={{
+                    value: initialData.player.preferred_footer,
+                    label: initialData.player.preferred_footer,
+                  }}
                   options={[
                     {
                       value: 'Direito',
@@ -702,4 +774,4 @@ const CreatePlayer: React.FC = () => {
   );
 };
 
-export default CreatePlayer;
+export default EditPlayer;
