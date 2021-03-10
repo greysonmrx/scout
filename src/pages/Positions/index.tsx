@@ -114,9 +114,7 @@ const Positions: React.FC = () => {
                   <Actions>
                     <button
                       type="button"
-                      onClick={() => {
-                      /* Mano */
-                      }}
+                      onClick={() => handleGoToPage(`/positions/edit/${position.id}`)}
                     >
                       Editar
                     </button>
