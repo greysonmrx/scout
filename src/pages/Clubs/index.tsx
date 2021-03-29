@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { useHistory } from 'react-router-dom';
 
@@ -8,16 +8,38 @@ import Table from '../../components/Table';
 import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
 
+import api from '../../services/api';
+
 import handlePluralWord from '../../utils/handlePluralWord';
+import hasPermission from '../../utils/hasPermission';
+
+import { useAuth } from '../../hooks/auth';
+import { useToast } from '../../hooks/toast';
 
 import {
   Container, Wrapper, Top, Filter, ClubShield,
 } from './styles';
 
+type Club = {
+  id: number;
+  name: string;
+  shield: string;
+  count_players: number;
+  owner: {
+    id: number;
+    name: string;
+  }
+};
+
 const Clubs: React.FC = () => {
   const history = useHistory();
 
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
   const [filter, setFilter] = useState('per_club');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({
     page_count: 5,
@@ -26,34 +48,7 @@ const Clubs: React.FC = () => {
     per_page: 5,
     total_pages: 1,
   });
-  const [clubs, setClubs] = useState([
-    {
-      id: 1,
-      shield: 'http://localhost:5000/files/sao_paulo.png',
-      name: 'São Paulo',
-      count_players: 20,
-    }, {
-      id: 2,
-      shield: 'http://localhost:5000/files/psg.png',
-      name: 'Paris Saint-Germain',
-      count_players: 18,
-    }, {
-      id: 3,
-      shield: 'http://localhost:5000/files/fluminense.png',
-      name: 'Fluminense',
-      count_players: 25,
-    }, {
-      id: 4,
-      shield: 'http://localhost:5000/files/flamengo.png',
-      name: 'Flamengo',
-      count_players: 22,
-    }, {
-      id: 5,
-      shield: 'http://localhost:5000/files/barcelona.png',
-      name: 'Barcelona',
-      count_players: 20,
-    },
-  ]);
+  const [clubs, setClubs] = useState<Array<Club>>([]);
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -65,9 +60,73 @@ const Clubs: React.FC = () => {
     }
   }, [filter]);
 
-  const handleGoToPage = useCallback((path: string) => {
-    history.push(path);
-  }, []);
+  const handleGoToPage = useCallback((path: string, params?: Record<string, unknown>) => {
+    history.push(path, params);
+  }, [history]);
+
+  async function fetchClubs() {
+    try {
+      const clubsResponse = await api.get('/clubs', {
+        params: {
+          limit,
+          page,
+          search,
+        },
+      });
+
+      const { clubs: fetchedClubs, ...paginationData } = clubsResponse.data;
+
+      setClubs(fetchedClubs);
+      setPagination(paginationData);
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter os times!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
+
+  const handleDeleteClub = useCallback(async (id: number) => {
+    try {
+      await api.delete(`/clubs/${id}`);
+
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Time excluído com sucesso.',
+      });
+
+      if (clubs.length - 1 === 0) {
+        setPage((oldPage) => oldPage - 1);
+      } else {
+        setClubs((oldClubs) => [...oldClubs.filter((club) => club.id !== id)]);
+        setPagination((oldPagination) => ({
+          ...oldPagination,
+          page_count: oldPagination.page_count - 1,
+          total_items: oldPagination.total_items - 1,
+        }));
+      }
+    } catch (err) {
+      addToast({
+        title: 'Erro ao excluir o time!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }, [clubs, addToast]);
+
+  const searchClubs = useCallback(() => {
+    setPage(1);
+
+    if (page === 1) {
+      fetchClubs();
+    }
+  }, [search, page]);
+
+  useEffect(() => {
+    fetchClubs();
+  }, [page]);
 
   return (
     <Container>
@@ -94,6 +153,7 @@ const Clubs: React.FC = () => {
               placeholder={handlePlaceholderText()}
               value={search}
               onChange={({ target }) => setSearch(target.value)}
+              onKeyUp={(event) => event.key === 'Enter' && searchClubs()}
             />
             <FiSearch />
           </div>
@@ -104,6 +164,7 @@ const Clubs: React.FC = () => {
               <th>Escudo</th>
               <th>Nome</th>
               <th>Número de jogadores</th>
+              <th>Criador</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -121,23 +182,27 @@ const Clubs: React.FC = () => {
                   {' '}
                   {handlePluralWord('jogador', club.count_players, 'es')}
                 </td>
+                <td>{club.owner.name}</td>
                 <td>
-                  <Actions>
-                    <button
-                      type="button"
-                      onClick={() => handleGoToPage(`/clubs/edit/${club.id}`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                      /* Mano */
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </Actions>
+                  {
+                    hasPermission(user.id, user.role, club.owner.id) && (
+                    <Actions>
+                      <button
+                        type="button"
+                        onClick={() => handleGoToPage(`/clubs/edit/${club.id}`, club)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => handleDeleteClub(club.id)}
+                      >
+                        Excluir
+                      </button>
+                    </Actions>
+                    )
+                  }
                 </td>
               </tr>
             ))}
@@ -145,7 +210,7 @@ const Clubs: React.FC = () => {
         </Table>
         <Pagination
           data={pagination}
-          callback={(page: number) => setPagination({ ...pagination, current_page: page })}
+          callback={setPage}
         />
       </Wrapper>
     </Container>

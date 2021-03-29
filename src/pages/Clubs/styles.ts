@@ -55,11 +55,12 @@ export const Filter = styled.button<FilterProps>`
 
 export const ClubShield = styled.div`
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
 
   img {
-    width: 35px;
-    height: 35px;
+    max-width: 100%;
+    max-height: 100%;
   }
 `;
