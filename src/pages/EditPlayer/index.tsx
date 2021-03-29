@@ -1,6 +1,8 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from 'react';
 import * as Yup from 'yup';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useRouteMatch } from 'react-router-dom';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
 
@@ -14,8 +16,20 @@ import FormErrors from '../../errors/formErrors';
 
 import { useToast } from '../../hooks/toast';
 
+import getValidationErrors from '../../utils/getValidationErrors';
+import handleFormatDate from '../../utils/handleFormatDate';
+import { labels } from '../../utils/handleChartLabels';
+
+import api from '../../services/api';
+
 import {
-  Container, Wrapper, Top, FormContainer, InputRow, FileInputRow,
+  Container,
+  Wrapper,
+  Top,
+  FormContainer,
+  InputRow,
+  FileInputRow,
+  InputsContainer,
 } from './styles';
 
 type FormData = {
@@ -30,7 +44,6 @@ type FormData = {
   };
   technical_attributes: {
     heading: number;
-    corners: number;
     crossing: number;
     tackling: number;
     finishing: number;
@@ -38,116 +51,167 @@ type FormData = {
     long_throws: number;
     free_kick_taking: number;
     marking: number;
-    penalty_taking: number;
     passing: number;
-    first_touch: number;
-    long_shots: number;
     technique: number;
   };
   mental_attributes: {
-    aggression: number;
+    effort: number;
     anticipation: number;
-    bravery: number;
-    composure: number;
+    intelligence: number;
     concentration: number;
-    decisions: number;
     determination: number;
     flair: number;
-    leadership: number;
-    off_the_ball: number;
-    positioning: number;
     teamwork: number;
+    leadership: number;
+    positioning: number;
+    off_the_ball: number;
     vision: number;
-    work_rate: number;
   };
   physical_attributes: {
-    stamina: number;
     acceleration: number;
+    velocity: number;
     agillity: number;
-    natural_fitness: number;
-    balance: number;
+    body_of_game: number;
     strength: number;
-    jumping_reach: number;
     pace: number;
   };
 };
 
+type Club = {
+  id: number;
+  name: string;
+  shield: string;
+  count_players: number;
+  owner: {
+    id: number;
+    name: string;
+  }
+};
+
+type Position = {
+  id: number;
+  name: string;
+  count_players: number;
+  owner: {
+    id: number;
+    name: string;
+  }
+};
+
 const EditPlayer: React.FC = () => {
+  const { params } = useRouteMatch() as any;
+
   const history = useHistory();
   const formRef = useRef<FormHandles>(null);
 
   const { addToast } = useToast();
 
-  const initialData = {
-    player: {
-      name: 'Lionel Messi',
-      avatar: 'http://localhost:5000/files/messi.png',
-      club: {
-        id: 2,
-        name: 'Barcelona',
-      },
-      birth_date: '1987-06-24',
-      position: {
-        id: 1,
-        name: 'Ponta Esquerda',
-      },
-      preferred_footer: 'Direito',
-      height: 184,
-      weight: 83,
-      heat_map: 'http://localhost:5000/files/mapa.png',
-      note: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris blandit ornare porta. Duis posuere nibh velit, eu fermentum ante accumsan vel. Etiam urna est, consectetur sed varius sed, volutpat vitae sapien. Integer gravida non est sit amet pharetra. Nullam suscipit sollicitudin porttitor. Etiam bibendum nisi quam. Phasellus quis dolor quis est pellentesque porta eu non nunc. Curabitur lobortis ornare tempor. Cras aliquet nunc a purus tempor sollicitudin. Phasellus tempus commodo leo ullamcorper scelerisque. Integer quis ullamcorper risus, sit amet vestibulum eros.',
-    },
-    technical_attributes: {
-      heading: 17,
-      corners: 13,
-      crossing: 14,
-      tackling: 8,
-      finishing: 19,
-      dribbling: 18,
-      long_throws: 11,
-      free_kick_taking: 16,
-      marking: 5,
-      penalty_taking: 18,
-      passing: 14,
-      first_touch: 16,
-      long_shots: 18,
-      technique: 18,
-    },
-    mental_attributes: {
-      aggression: 9,
-      anticipation: 17,
-      bravery: 15,
-      composure: 15,
-      concentration: 15,
-      decisions: 15,
-      determination: 20,
-      flair: 18,
-      leadership: 15,
-      off_the_ball: 18,
-      positioning: 6,
-      teamwork: 10,
-      vision: 14,
-      work_rate: 12,
-    },
-    physical_attributes: {
-      stamina: 17,
-      acceleration: 15,
-      agillity: 13,
-      natural_fitness: 18,
-      balance: 10,
-      strength: 18,
-      jumping_reach: 16,
-      pace: 19,
-    },
-  };
-
-  const [position, setPosition] = useState<number>(initialData.player.position.id);
-  const [preferredFoot, setPreferredFoot] = useState<string>(initialData.player.preferred_footer);
-  const [club, setClub] = useState<number>(initialData.player.club.id);
+  const [initialData, setInitialData] = useState<any | undefined>();
+  const [position, setPosition] = useState<number>();
+  const [preferredFoot, setPreferredFoot] = useState<string>();
+  const [club, setClub] = useState<number>();
+  const [clubs, setClubs] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(data: FormData) {
+  function renderInputs(section: string, fields: Record<string, string>) {
+    return Object.keys(fields).map((fieldKey) => (
+      <Input
+        key={fieldKey}
+        name={`${section}.${fieldKey}`}
+        label={fields[fieldKey]}
+        type="number"
+        required
+      />
+    ));
+  }
+
+  async function fetchClubs() {
+    try {
+      const clubsResponse = await api.get('/clubs', {
+        params: {
+          limit: 1000,
+          page: 1,
+        },
+      });
+
+      const { clubs: fetchedClubs } = clubsResponse.data;
+
+      const parsedClubs = fetchedClubs.map((currentClub: Club) => ({
+        value: currentClub.id,
+        label: currentClub.name,
+      }));
+
+      setClubs(parsedClubs);
+    } catch (err) {
+      addToast({
+        title: 'Ocorreu um erro!',
+        type: 'error',
+        description: 'Erro ao obter os times.',
+      });
+    }
+  }
+
+  async function fetchPositions() {
+    try {
+      const positionsResponse = await api.get('/positions', {
+        params: {
+          limit: 1000,
+          page: 1,
+        },
+      });
+
+      const { positions: fetchedPositions } = positionsResponse.data;
+
+      const parsedPositions = fetchedPositions.map((currentPosition: Position) => ({
+        value: currentPosition.id,
+        label: currentPosition.name,
+      }));
+
+      setPositions(parsedPositions);
+    } catch (err) {
+      addToast({
+        title: 'Ocorreu um erro!',
+        type: 'error',
+        description: 'Erro ao obter as posições.',
+      });
+    }
+  }
+
+  async function fetchPlayerDetails() {
+    try {
+      const playerResponse = await api.get(`/players/${params.id}`);
+
+      const {
+        technical_attributes, mental_attributes, physical_attributes, ...player
+      } = playerResponse.data;
+
+      Object.assign(player, {
+        birth_date: handleFormatDate(player.birth_date),
+      });
+
+      console.log({
+        player, technical_attributes, mental_attributes, physical_attributes,
+      });
+
+      setInitialData({
+        player, technical_attributes, mental_attributes, physical_attributes,
+      });
+      setPosition(player.position_id);
+      setPreferredFoot(player.preferred_footer);
+      setClub(player.club_id);
+    } catch (err) {
+      addToast({
+        title: 'Ocorreu um erro!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
+
+  const handleSubmit = useCallback(async (data: FormData) => {
     setLoading(true);
+
     formRef.current?.setErrors({});
 
     const schema = Yup.object().shape({
@@ -160,11 +224,6 @@ const EditPlayer: React.FC = () => {
       }),
       technical_attributes: Yup.object().shape({
         heading: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        corners: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -204,22 +263,7 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        penalty_taking: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
         passing: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        first_touch: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        long_shots: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -231,7 +275,7 @@ const EditPlayer: React.FC = () => {
           .required(FormErrors.REQUIRED),
       }),
       mental_attributes: Yup.object().shape({
-        aggression: Yup.number()
+        effort: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -241,22 +285,12 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        bravery: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        composure: Yup.number()
+        intelligence: Yup.number()
           .default(0)
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
         concentration: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        decisions: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -271,12 +305,12 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        leadership: Yup.number()
+        teamwork: Yup.number()
           .default(0)
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        off_the_ball: Yup.number()
+        leadership: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -286,7 +320,7 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        teamwork: Yup.number()
+        off_the_ball: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -296,19 +330,14 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        work_rate: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
       }),
       physical_attributes: Yup.object().shape({
-        stamina: Yup.number()
+        acceleration: Yup.number()
           .default(0)
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        acceleration: Yup.number()
+        velocity: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -318,22 +347,12 @@ const EditPlayer: React.FC = () => {
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
-        natural_fitness: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        balance: Yup.number()
+        body_of_game: Yup.number()
           .default(0)
           .min(0)
           .max(20)
           .required(FormErrors.REQUIRED),
         strength: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        jumping_reach: Yup.number()
           .default(0)
           .min(0)
           .max(20)
@@ -346,419 +365,211 @@ const EditPlayer: React.FC = () => {
       }),
     });
 
-    schema.validate(data, {
-      abortEarly: false,
-    }).then(() => {
-      const { player } = data;
+    try {
+      await schema.validate(data, {
+        abortEarly: false,
+      });
+
+      const { player, ...attributes } = data;
 
       if (player.avatar) {
-        console.log('Upload new player avatar');
+        const avatarData = new FormData();
+
+        avatarData.set('file', player.avatar);
+
+        const avatarResponse = await api.post('/files', avatarData);
+
+        Object.assign(player, {
+          avatar_id: avatarResponse.data.id,
+        });
       }
 
       if (player.heat_map) {
-        console.log('Upload new player heat map');
+        const heatMapData = new FormData();
+
+        heatMapData.set('file', player.heat_map);
+
+        const heatMapResponse = await api.post('/files', heatMapData);
+
+        Object.assign(player, {
+          heat_map_id: heatMapResponse.data.id,
+        });
       }
 
-      console.log(data);
-      console.log(position);
-      console.log(preferredFoot);
-      console.log(club);
+      await api.put(`/players/${params.id}`, {
+        ...player,
+        ...attributes,
+        club_id: club,
+        position_id: position,
+        preferred_footer: preferredFoot,
+      });
 
-      // Store player
-    }).catch((err) => {
-      const validationErrors = {};
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Jogador editado com sucesso.',
+      });
+
+      history.push('/players');
+    } catch (err) {
+      setLoading(false);
 
       if (err instanceof Yup.ValidationError) {
-        err.inner.forEach((error) => {
-          if (error.path) {
-            Object.assign(validationErrors, {
-              [error.path]: error.message,
-            });
-          }
+        const errors = getValidationErrors(err);
+
+        formRef.current?.setErrors(errors);
+      } else {
+        addToast({
+          title: 'Ocorreu um erro!',
+          type: 'error',
+          description: err.response?.data.message,
         });
-
-        formRef.current?.setErrors(validationErrors);
       }
-    });
-
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  }
+    }
+  }, [addToast, history, club, position, preferredFoot]);
 
   const handleGoBack = useCallback(() => {
     history.goBack();
+  }, [history]);
+
+  useEffect(() => {
+    fetchClubs();
+    fetchPositions();
+    fetchPlayerDetails();
   }, []);
 
   return (
     <Container>
       <Wrapper>
-        <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
-          <Top>
-            <h1>Edição de jogadores</h1>
-            <div>
-              <Button type="button" onClick={handleGoBack}>Voltar</Button>
-              <Button type="submit" loading={loading}>Salvar jogador</Button>
-            </div>
-          </Top>
-          <FormContainer>
-            <fieldset>
-              <legend>Dados</legend>
-              <FileInputRow>
-                <File name="player.avatar" width={200} height={200} placeholder="Selecione a imagem do jogador" />
-                <File name="player.heat_map" width={275} height={200} placeholder="Selecione a imagem do mapa de calor" />
-              </FileInputRow>
-              <InputRow columns={3}>
-                <Input
-                  name="player.name"
-                  label="Nome do jogador"
-                  placeholder="Insira o nome do jogador"
-                  required
-                  autoFocus
-                />
-                <Input
-                  name="player.birth_date"
-                  label="Data de nascimento"
-                  type="date"
-                  required
-                />
-                <Select
-                  name="player.position"
-                  label="Posição"
-                  onChange={({ value }) => setPosition(value)}
-                  placeholder="Selecione uma posição"
-                  defaultValue={{
-                    value: initialData.player.position.id,
-                    label: initialData.player.position.name,
-                  }}
-                  options={[
+        {
+          initialData ? (
+            <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
+              <Top>
+                <h1>Edição de jogadores</h1>
+                <div>
+                  <Button type="button" onClick={handleGoBack}>Voltar</Button>
+                  <Button type="submit" loading={loading}>Salvar jogador</Button>
+                </div>
+              </Top>
+              <FormContainer>
+                <fieldset>
+                  <legend>Dados</legend>
+                  <FileInputRow>
+                    <File name="player.avatar" width={200} height={200} placeholder="Selecione a imagem do jogador" />
+                    <File name="player.heat_map" width={275} height={200} placeholder="Selecione a imagem do mapa de calor" />
+                  </FileInputRow>
+                  <InputRow columns={3}>
+                    <Input
+                      name="player.name"
+                      label="Nome do jogador"
+                      placeholder="Insira o nome do jogador"
+                      required
+                      autoFocus
+                    />
+                    <Input
+                      name="player.birth_date"
+                      label="Data de nascimento"
+                      type="date"
+                      required
+                    />
+                    <Select
+                      name="player.position"
+                      label="Posição"
+                      onChange={({ value }) => setPosition(value)}
+                      placeholder="Selecione uma posição"
+                      defaultValue={{
+                        value: initialData.player.position_id,
+                        label: initialData.player.position,
+                      }}
+                      options={positions}
+                    />
+                  </InputRow>
+                  <InputRow columns={4}>
+                    <Input
+                      name="player.height"
+                      label="Altura do jogador"
+                      placeholder="Insira a altura do jogador"
+                      type="number"
+                      required
+                    />
+                    <Input
+                      name="player.weight"
+                      label="Peso do jogador"
+                      placeholder="Insira o peso do jogador"
+                      type="number"
+                      required
+                    />
+                    <Select
+                      name="player.club"
+                      label="Time"
+                      onChange={({ value }) => setClub(value)}
+                      placeholder="Selecione um time"
+                      defaultValue={{
+                        value: initialData.player.club_id,
+                        label: initialData.player.club.name,
+                      }}
+                      options={clubs}
+                    />
+                    <Select
+                      name="player.preferred_footer"
+                      label="Pé preferido"
+                      onChange={({ value }) => setPreferredFoot(value)}
+                      placeholder="Selecione o pé preferido"
+                      defaultValue={{
+                        value: initialData.player.preferred_footer,
+                        label: initialData.player.preferred_footer,
+                      }}
+                      options={[
+                        {
+                          value: 'Direito',
+                          label: 'Direito',
+                        },
+                        {
+                          value: 'Esquerdo',
+                          label: 'Esquerdo',
+                        },
+                      ]}
+                    />
+                  </InputRow>
+                  <InputRow columns={1}>
+                    <TextArea
+                      name="player.note"
+                      label="Observações sobre o jogador"
+                      placeholder="Insira as observações sobre o jogador"
+                      required
+                    />
+                  </InputRow>
+                </fieldset>
+                <fieldset>
+                  <legend>Atributos Técnicos</legend>
+                  <InputsContainer>
                     {
-                      value: 1,
-                      label: 'Ponta esquerda',
-                    },
+                      renderInputs('technical_attributes', labels.technical_attributes)
+                    }
+                  </InputsContainer>
+                </fieldset>
+                <fieldset>
+                  <legend>Atributos Mentais</legend>
+                  <InputsContainer>
                     {
-                      value: 2,
-                      label: 'Lateral direita',
-                    },
-                  ]}
-                />
-              </InputRow>
-              <InputRow columns={4}>
-                <Input
-                  name="player.height"
-                  label="Altura do jogador"
-                  placeholder="Insira a altura do jogador"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="player.weight"
-                  label="Peso do jogador"
-                  placeholder="Insira o peso do jogador"
-                  type="number"
-                  required
-                />
-                <Select
-                  name="player.club"
-                  label="Time"
-                  onChange={({ value }) => setClub(value)}
-                  placeholder="Selecione um time"
-                  defaultValue={{
-                    value: initialData.player.club.id,
-                    label: initialData.player.club.name,
-                  }}
-                  options={[
+                      renderInputs('mental_attributes', labels.mental_attributes)
+                    }
+                  </InputsContainer>
+                </fieldset>
+                <fieldset>
+                  <legend>Atributos Físicos</legend>
+                  <InputsContainer>
                     {
-                      value: 1,
-                      label: 'Flamengo',
-                    },
-                    {
-                      value: 2,
-                      label: 'Barcelona',
-                    },
-                    {
-                      value: 3,
-                      label: 'São Paulo',
-                    },
-                    {
-                      value: 4,
-                      label: 'Fluminense',
-                    },
-                  ]}
-                />
-                <Select
-                  name="player.preferred_footer"
-                  label="Pé preferido"
-                  onChange={({ value }) => setPreferredFoot(value)}
-                  placeholder="Selecione o pé preferido"
-                  defaultValue={{
-                    value: initialData.player.preferred_footer,
-                    label: initialData.player.preferred_footer,
-                  }}
-                  options={[
-                    {
-                      value: 'Direito',
-                      label: 'Direito',
-                    },
-                    {
-                      value: 'Esquerdo',
-                      label: 'Esquerdo',
-                    },
-                  ]}
-                />
-              </InputRow>
-              <InputRow columns={1}>
-                <TextArea
-                  name="player.note"
-                  label="Observações sobre o jogador"
-                  placeholder="Insira as observações sobre o jogador"
-                  required
-                />
-              </InputRow>
-            </fieldset>
-            <fieldset>
-              <legend>Atributos Técnicos</legend>
-              <InputRow columns={5}>
-                <Input
-                  name="technical_attributes.heading"
-                  label="Cabeceamento"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.corners"
-                  label="Cantos"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.crossing"
-                  label="Cruzamentos"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.tackling"
-                  label="Desarme"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.marking"
-                  label="Marcação"
-                  type="number"
-                  required
-                />
-              </InputRow>
-              <InputRow columns={5}>
-                <Input
-                  name="technical_attributes.finishing"
-                  label="Finalização"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.dribbling"
-                  label="Finta"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.passing"
-                  label="Passe"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.free_kick_taking"
-                  label="Livres"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.technique"
-                  label="Técnica"
-                  type="number"
-                  required
-                />
-              </InputRow>
-              <InputRow columns={4}>
-                <Input
-                  name="technical_attributes.long_shots"
-                  label="Remates de Longe"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.penalty_taking"
-                  label="Marcação de Penálti"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.long_throws"
-                  label="Lançamentos Longos"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="technical_attributes.first_touch"
-                  label="Primeiro Toque"
-                  type="number"
-                  required
-                />
-              </InputRow>
-            </fieldset>
-            <fieldset>
-              <legend>Atributos Mentais</legend>
-              <InputRow columns={5}>
-                <Input
-                  name="mental_attributes.aggression"
-                  label="Agressividade"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.anticipation"
-                  label="Antecipação"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.bravery"
-                  label="Bravura"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.composure"
-                  label="Compostura"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.leadership"
-                  label="Liderança"
-                  type="number"
-                  required
-                />
-              </InputRow>
-              <InputRow columns={5}>
-                <Input
-                  name="mental_attributes.concentration"
-                  label="Concentração"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.decisions"
-                  label="Decições"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.determination"
-                  label="Determinação"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.vision"
-                  label="Visão de Jogo"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.off_the_ball"
-                  label="Sem Bola"
-                  type="number"
-                  required
-                />
-              </InputRow>
-              <InputRow columns={4}>
-                <Input
-                  name="mental_attributes.positioning"
-                  label="Posicionamento"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.teamwork"
-                  label="Trabalho de Equipe"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.flair"
-                  label="Imprevisibilidade"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="mental_attributes.work_rate"
-                  label="Índice de Trabalho"
-                  type="number"
-                  required
-                />
-              </InputRow>
-            </fieldset>
-            <fieldset>
-              <legend>Atributos Físicos</legend>
-              <InputRow columns={4}>
-                <Input
-                  name="physical_attributes.acceleration"
-                  label="Aceleração"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.agillity"
-                  label="Agilidade"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.natural_fitness"
-                  label="Aptidão Física"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.balance"
-                  label="Equilíbrio"
-                  type="number"
-                  required
-                />
-              </InputRow>
-              <InputRow columns={4}>
-                <Input
-                  name="physical_attributes.strength"
-                  label="Força"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.jumping_reach"
-                  label="Impulsão"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.pace"
-                  label="Resistência"
-                  type="number"
-                  required
-                />
-                <Input
-                  name="physical_attributes.stamina"
-                  label="Velocidade"
-                  type="number"
-                  required
-                />
-              </InputRow>
-            </fieldset>
-          </FormContainer>
-        </Form>
+                      renderInputs('physical_attributes', labels.physical_attributes)
+                    }
+                  </InputsContainer>
+                </fieldset>
+              </FormContainer>
+            </Form>
+          ) : (
+            <p>Carregando...</p>
+          )
+      }
       </Wrapper>
     </Container>
   );

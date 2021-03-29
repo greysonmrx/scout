@@ -60,6 +60,13 @@ export const FormContainer = styled.div`
   }
 `;
 
+export const InputsContainer = styled.div`
+  display: grid;
+  column-gap: 20px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  row-gap: 25px;
+`;
+
 export const InputRow = styled.div<InputRowProps>`
   display: grid;
   column-gap: 20px;
