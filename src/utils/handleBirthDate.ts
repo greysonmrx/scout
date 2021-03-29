@@ -2,7 +2,7 @@ import handlePluralWord from './handlePluralWord';
 
 function handleBirthDate(birthDate: string): string {
   const currentDate = new Date();
-  const [year, month, day] = birthDate.split('-');
+  const [year, month, day] = birthDate.split('T')[0].split('-');
 
   let age = currentDate.getFullYear() - Number(year) - 1;
 

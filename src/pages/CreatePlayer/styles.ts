@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 type InputRowProps = {
   columns: number;
-}
+};
 
 export const Container = styled.div`
   display: flex;
@@ -58,6 +58,13 @@ export const FormContainer = styled.div`
       margin-bottom: 20px;
     }
   }
+`;
+
+export const InputsContainer = styled.div`
+  display: grid;
+  column-gap: 20px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  row-gap: 25px;
 `;
 
 export const InputRow = styled.div<InputRowProps>`
