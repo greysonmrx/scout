@@ -7,7 +7,11 @@ import { FormHandles } from '@unform/core';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
+import api from '../../services/api';
+
 import { useToast } from '../../hooks/toast';
+
+import getValidationErrors from '../../utils/getValidationErrors';
 
 import {
   Container, Wrapper, Top, FormContainer, InputRow,
@@ -25,7 +29,7 @@ const CreatePosition: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = useCallback((data: FormData) => {
+  const handleSubmit = useCallback(async (data: FormData) => {
     setLoading(true);
 
     formRef.current?.setErrors({});
@@ -34,37 +38,36 @@ const CreatePosition: React.FC = () => {
       name: Yup.string().required(),
     });
 
-    schema.validate(data, {
-      abortEarly: false,
-    })
-      .then(() => {
-        console.log(data);
-      }).catch((err) => {
-        const validationErrors = {};
-
-        if (err instanceof Yup.ValidationError) {
-          err.inner.forEach((error) => {
-            if (error.path) {
-              Object.assign(validationErrors, {
-                [error.path]: error.message,
-              });
-            }
-          });
-
-          addToast({
-            title: 'Ocorreu um erro!',
-            type: 'error',
-            description: 'Preencha todo o formulário.',
-          });
-
-          formRef.current?.setErrors(validationErrors);
-        }
+    try {
+      await schema.validate(data, {
+        abortEarly: false,
       });
 
-    setTimeout(() => {
+      await api.post('/positions', data);
+
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Posição cadastrada com sucesso.',
+      });
+
+      history.push('/positions');
+    } catch (err) {
       setLoading(false);
-    }, 1000);
-  }, [setLoading]);
+
+      if (err instanceof Yup.ValidationError) {
+        const errors = getValidationErrors(err);
+
+        formRef.current?.setErrors(errors);
+      } else {
+        addToast({
+          title: 'Ocorreu um erro!',
+          type: 'error',
+          description: err.response?.data.message,
+        });
+      }
+    }
+  }, [addToast, history]);
 
   const handleGoBack = useCallback(() => {
     history.goBack();

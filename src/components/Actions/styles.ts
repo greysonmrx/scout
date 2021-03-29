@@ -33,7 +33,7 @@ export const ActionList = styled.div<ActionListProps>`
   background: #fff;
   border-radius: 4px;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
-  display: ${props => (props.visible ? 'block' : 'none')};
+  display: ${(props) => (props.visible ? 'block' : 'none')};
   padding: 5px 0px;
   z-index: 2;
 
@@ -51,12 +51,15 @@ export const ActionList = styled.div<ActionListProps>`
     color: #071633;
     text-align: left;
 
+    & + button {
+      border-top: 1px solid #ddd;
+    }
+
     &:hover {
       background-color: #eeeeee;
     }
 
-    &:last-child {
-      border-top: 1px solid #ddd;
+    &.danger {
       color: #e12021;
     }
   }
