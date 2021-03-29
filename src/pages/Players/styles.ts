@@ -60,12 +60,13 @@ export const Filter = styled.button<FilterProps>`
 
 export const PlayerAvatar = styled.div`
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
 
   img {
-    width: 35px;
-    height: 35px;
+    max-width: 100%;
+    max-height: 100%;
   }
 `;
 
@@ -75,8 +76,8 @@ export const ClubField = styled.div`
   align-items: center;
 
   img {
-    width: 35px;
-    height: 35px;
+    max-width: 35px;
+    max-height: 35px;
     margin-right: 15px;
   }
 `;

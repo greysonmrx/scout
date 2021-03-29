@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from 'styled-components';
 import { FiSearch } from 'react-icons/fi';
 import { useHistory } from 'react-router-dom';
@@ -10,6 +10,12 @@ import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
 
 import handleBirthDate from '../../utils/handleBirthDate';
+import hasPermission from '../../utils/hasPermission';
+
+import api from '../../services/api';
+
+import { useToast } from '../../hooks/toast';
+import { useAuth } from '../../hooks/auth';
 
 import {
   Container,
@@ -21,81 +27,41 @@ import {
   RecommendationField,
 } from './styles';
 
+type Player = {
+  id: number;
+  name: string;
+  avatar: string;
+  birth_date: string;
+  club: {
+    name: string;
+    shield: string;
+  };
+  position: string;
+  owner: {
+    id: number;
+    name: string;
+  };
+};
+
 const Players: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
 
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('per_player');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
   const [pagination, setPagination] = useState({
-    page_count: 5,
-    total_items: 5,
-    current_page: 1,
-    per_page: 5,
-    total_pages: 1,
+    page_count: 0,
+    total_items: 0,
+    current_page: 0,
+    per_page: 0,
+    total_pages: 0,
   });
-  const [players, setPlayers] = useState([
-    {
-      id: 1,
-      name: 'Daniel Alves',
-      avatar: 'http://localhost:5000/files/dani_alves.png',
-      club: {
-        avatar: 'http://localhost:5000/files/sao_paulo.png',
-        name: 'São Paulo',
-      },
-      birth_date: '1983-05-06',
-      position: 'Lateral Dir.',
-      recommendation: 82,
-    },
-    {
-      id: 2,
-      name: 'Neymar Jr.',
-      avatar: 'http://localhost:5000/files/neymar.png',
-      club: {
-        avatar: 'http://localhost:5000/files/psg.png',
-        name: 'Paris Saint-Germain',
-      },
-      birth_date: '1992-02-05',
-      position: 'Ponta esquerda',
-      recommendation: 91,
-    },
-    {
-      id: 3,
-      name: 'Bruno Henrique',
-      avatar: 'http://localhost:5000/files/bruno_henrique.png',
-      club: {
-        avatar: 'http://localhost:5000/files/flamengo.png',
-        name: 'Flamengo',
-      },
-      birth_date: '1990-12-30',
-      position: 'Ponta esquerda',
-      recommendation: 53,
-    },
-    {
-      id: 4,
-      name: 'Gabriel Barbosa',
-      avatar: 'http://localhost:5000/files/gabriel_barbosa.png',
-      club: {
-        avatar: 'http://localhost:5000/files/flamengo.png',
-        name: 'Flamengo',
-      },
-      birth_date: '1996-08-30',
-      position: 'Centroavante',
-      recommendation: 32,
-    },
-    {
-      id: 5,
-      name: 'Lionel Messi',
-      avatar: 'http://localhost:5000/files/messi.png',
-      club: {
-        avatar: 'http://localhost:5000/files/barcelona.png',
-        name: 'Barcelona',
-      },
-      birth_date: '1987-06-24',
-      position: 'Ponta Direita',
-      recommendation: 23,
-    },
-  ]);
+  const [players, setPlayers] = useState<Array<Player>>([]);
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -122,13 +88,77 @@ const Players: React.FC = () => {
     return theme.colors.red.error;
   }, []);
 
-  const handleGoToPage = useCallback((path: string) => {
-    history.push(path);
-  }, []);
+  const handleGoToPage = useCallback((path: string, params?: Record<string, unknown>) => {
+    history.push(path, params);
+  }, [history]);
 
   const handleViewPlayerDetails = useCallback((player_id: number) => {
     handleGoToPage(`/players/details/${player_id}`);
   }, [handleGoToPage]);
+
+  async function fetchPlayers() {
+    try {
+      const playersResponse = await api.get('/players', {
+        params: {
+          limit,
+          page,
+          search,
+        },
+      });
+
+      const { players: fetchedPlayers, ...paginationData } = playersResponse.data;
+
+      setPlayers(fetchedPlayers);
+      setPagination(paginationData);
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter jogadores!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
+
+  const searchPlayers = useCallback(() => {
+    setPage(1);
+
+    if (page === 1) {
+      fetchPlayers();
+    }
+  }, [search, page]);
+
+  const handleDeletePlayer = useCallback(async (id: number) => {
+    try {
+      await api.delete(`/players/${id}`);
+
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Jogador excluído com sucesso.',
+      });
+
+      if (players.length - 1 === 0) {
+        setPage((oldPage) => oldPage - 1);
+      } else {
+        setPlayers((oldPlayers) => [...oldPlayers.filter((player) => player.id !== id)]);
+        setPagination((oldPagination) => ({
+          ...oldPagination,
+          page_count: oldPagination.page_count - 1,
+          total_items: oldPagination.total_items - 1,
+        }));
+      }
+    } catch (err) {
+      addToast({
+        title: 'Erro ao excluir o jogador!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }, [players, addToast]);
+
+  useEffect(() => {
+    fetchPlayers();
+  }, [page]);
 
   return (
     <Container>
@@ -161,8 +191,10 @@ const Players: React.FC = () => {
           <div>
             <input
               placeholder={handlePlaceholderText()}
+              type="search"
               value={search}
               onChange={({ target }) => setSearch(target.value)}
+              onKeyUp={(event) => event.key === 'Enter' && searchPlayers()}
             />
             <FiSearch />
           </div>
@@ -175,7 +207,7 @@ const Players: React.FC = () => {
               <th>Time</th>
               <th>Idade</th>
               <th>Posição</th>
-              <th>Recomendação</th>
+              <th>Criador</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -190,18 +222,19 @@ const Players: React.FC = () => {
                 <td>{player.name}</td>
                 <td>
                   <ClubField>
-                    <img src={player.club.avatar} alt={player.club.name} />
+                    <img src={player.club.shield} alt={player.club.name} />
                     {player.club.name}
                   </ClubField>
                 </td>
                 <td>{handleBirthDate(player.birth_date)}</td>
                 <td>{player.position}</td>
                 <td>
-                  <RecommendationField
+                  {/* <RecommendationField
                     color={handlePercentageColors(player.recommendation)}
                   >
                     <span>{`${player.recommendation}%`}</span>
-                  </RecommendationField>
+                  </RecommendationField> */}
+                  {player.owner.name}
                 </td>
                 <td>
                   <Actions>
@@ -211,20 +244,25 @@ const Players: React.FC = () => {
                     >
                       Visualizar
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGoToPage(`/players/edit/${player.id}`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        /* Mano */
-                      }}
-                    >
-                      Excluir
-                    </button>
+                    {
+                      hasPermission(user.id, user.role, player.owner.id) && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleGoToPage(`/players/edit/${player.id}`)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="danger"
+                            onClick={() => handleDeletePlayer(player.id)}
+                          >
+                            Excluir
+                          </button>
+                        </>
+                      )
+                    }
                   </Actions>
                 </td>
               </tr>
@@ -233,7 +271,7 @@ const Players: React.FC = () => {
         </Table>
         <Pagination
           data={pagination}
-          callback={(page: number) => setPagination({ ...pagination, current_page: page })}
+          callback={setPage}
         />
       </Wrapper>
     </Container>
