@@ -1,14 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTheme } from 'styled-components';
 import { rgba } from 'polished';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useRouteMatch } from 'react-router-dom';
 
 import Radar from '../../components/Radar';
 import MenuTable from '../../components/MenuTable';
 import Button from '../../components/Button';
 
+import { useToast } from '../../hooks/toast';
+
 import handleChartLabels, { labels } from '../../utils/handleChartLabels';
 import handleBirthDate from '../../utils/handleBirthDate';
+
+import api from '../../services/api';
 
 import {
   Container,
@@ -23,76 +27,97 @@ import {
   AttributeType,
 } from './styles';
 
+type Player = {
+  id: number;
+  name: string;
+  heat_map: string;
+  avatar: string;
+  birth_date: string;
+  club_id: number;
+  position_id: number;
+  preferred_footer: string;
+  height: number;
+  weight: number;
+  note: string;
+  club: {
+    name: string;
+    shield: string;
+  };
+  position: string;
+  technical_attributes: {
+    heading: number;
+    crossing: number;
+    tackling: number;
+    finishing: number;
+    dribbling: number;
+    long_throws: number;
+    free_kick_taking: number;
+    marking: number;
+    passing: number;
+    technique: number;
+  };
+  mental_attributes: {
+    effort: number;
+    anticipation: number;
+    intelligence: number;
+    concentration: number;
+    determination: number;
+    flair: number;
+    teamwork: number;
+    leadership: number;
+    positioning: number;
+    off_the_ball: number;
+    vision: number;
+  };
+  physical_attributes: {
+    acceleration: number;
+    velocity: number;
+    agillity: number;
+    body_of_game: number;
+    strength: number;
+    pace: number;
+  };
+  owner: {
+    id: number;
+    name: string;
+    avatar: string;
+  };
+};
+
 const PlayerDetails: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
+  const { params } = useRouteMatch() as any;
+
+  const { addToast } = useToast();
 
   const [selectedAttributeType, setSelectedAttributeType] = useState<
     'technical_attributes' |
     'mental_attributes' |
     'physical_attributes'
   >('technical_attributes');
-  const [player, setPlayer] = useState({
-    id: 5,
-    name: 'Lionel Messi',
-    avatar: 'http://localhost:5000/files/messi.png',
-    club: {
-      shield: 'http://localhost:5000/files/barcelona.png',
-      name: 'Barcelona',
-    },
-    birth_date: '1987-06-24',
-    position: 'Ponta Direita',
-    preferred_footer: 'Direito',
-    height: 184,
-    weight: 83,
-    heat_map: 'http://localhost:5000/files/mapa.png',
-    observations: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris blandit ornare porta. Duis posuere nibh velit, eu fermentum ante accumsan vel. Etiam urna est, consectetur sed varius sed, volutpat vitae sapien. Integer gravida non est sit amet pharetra. Nullam suscipit sollicitudin porttitor. Etiam bibendum nisi quam. Phasellus quis dolor quis est pellentesque porta eu non nunc. Curabitur lobortis ornare tempor. Cras aliquet nunc a purus tempor sollicitudin. Phasellus tempus commodo leo ullamcorper scelerisque. Integer quis ullamcorper risus, sit amet vestibulum eros.',
-    technical_attributes: {
-      heading: 17,
-      corners: 13,
-      crossing: 14,
-      tackling: 8,
-      finishing: 19,
-      dribbling: 18,
-      long_throws: 11,
-      free_kick_taking: 16,
-      marking: 5,
-      penalty_taking: 18,
-      passing: 14,
-      first_touch: 16,
-      long_shots: 18,
-      technique: 18,
-    },
-    mental_attributes: {
-      aggression: 9,
-      anticipation: 17,
-      bravery: 15,
-      composure: 15,
-      concentration: 15,
-      decisions: 15,
-      determination: 20,
-      flair: 18,
-      leadership: 15,
-      off_the_ball: 18,
-      positioning: 6,
-      teamwork: 10,
-      vision: 14,
-      work_rate: 12,
-    },
-    physical_attributes: {
-      stamina: 17,
-      acceleration: 15,
-      agillity: 13,
-      natural_fitness: 18,
-      balance: 10,
-      strength: 18,
-      jumping_reach: 16,
-      pace: 19,
-    },
-  });
+  const [player, setPlayer] = useState<Player | undefined>();
+
+  async function fetchPlayerDetails() {
+    try {
+      const playerResponse = await api.get(`players/${params.id}`);
+
+      setPlayer(playerResponse.data);
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter as informações!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
 
   const handleGoBack = useCallback(() => {
     history.goBack();
+  }, []);
+
+  useEffect(() => {
+    fetchPlayerDetails();
   }, []);
 
   return (
@@ -102,109 +127,117 @@ const PlayerDetails: React.FC = () => {
           <h1>Informações do jogador</h1>
           <Button onClick={handleGoBack}>Voltar</Button>
         </Top>
-        <Informations>
-          <TopInformations>
-            <div>
-              <Avatar>
-                <img src={player.club.shield} alt={player.club.name} />
-                <img src={player.avatar} alt={player.name} />
-              </Avatar>
-              <div>
-                <h3>{player.name}</h3>
-                <h5>{player.club.name}</h5>
-                <AttributesList>
-                  <li>
-                    <strong>Idade</strong>
-                    <span>{handleBirthDate(player.birth_date)}</span>
-                  </li>
-                  <li>
-                    <strong>Posição</strong>
-                    <span>{player.position}</span>
-                  </li>
-                  <li>
-                    <strong>Pé preferido</strong>
-                    <span>{player.preferred_footer}</span>
-                  </li>
-                  <li>
-                    <strong>Altura</strong>
-                    <span>
-                      {player.height}
-                      {' '}
-                      cm
-                    </span>
-                  </li>
-                  <li>
-                    <strong>Peso</strong>
-                    <span>
-                      {player.weight}
-                      {' '}
-                      kg
-                    </span>
-                  </li>
-                </AttributesList>
-              </div>
-            </div>
-            <div>
-              <h3>Mapa de calor</h3>
-              <img src={player.heat_map} alt="Mapa de calor" />
-            </div>
-          </TopInformations>
-          <Observations>
-            <h3>Observações</h3>
-            <p>{player.observations}</p>
-          </Observations>
-        </Informations>
-        <Attributes>
-          <h1>Atributos</h1>
-          <MenuTable>
-            <ul>
-              <li>
-                <AttributeType
-                  isActive={selectedAttributeType === 'technical_attributes'}
-                  onClick={() => setSelectedAttributeType('technical_attributes')}
-                >
-                  Técnicos
-                </AttributeType>
-              </li>
-              <li>
-                <AttributeType
-                  isActive={selectedAttributeType === 'mental_attributes'}
-                  onClick={() => setSelectedAttributeType('mental_attributes')}
-                >
-                  Mentais
-                </AttributeType>
-              </li>
-              <li>
-                <AttributeType
-                  isActive={selectedAttributeType === 'physical_attributes'}
-                  onClick={() => setSelectedAttributeType('physical_attributes')}
-                >
-                  Físicos
-                </AttributeType>
-              </li>
-            </ul>
-          </MenuTable>
-          <Radar
-            data={{
-              labels: handleChartLabels(
-                player[selectedAttributeType],
-                labels[selectedAttributeType],
-              ),
-              datasets: [
-                {
-                  borderWidth: 2,
-                  data: Object.values(player[selectedAttributeType]),
-                  pointBackgroundColor: theme.colors.blue,
-                  backgroundColor: rgba(theme.colors.blue, 0.25),
-                  borderColor: theme.colors.blue,
-                },
-              ],
-            }}
-            legend={{
-              display: false,
-            }}
-          />
-        </Attributes>
+        {
+          !player ? (
+            <p>Carregando</p>
+          ) : (
+            <>
+              <Informations>
+                <TopInformations>
+                  <div>
+                    <Avatar>
+                      <img src={player.club.shield} alt={player.club.name} />
+                      <img src={player.avatar} alt={player.name} />
+                    </Avatar>
+                    <div>
+                      <h3>{player.name}</h3>
+                      <h5>{player.club.name}</h5>
+                      <AttributesList>
+                        <li>
+                          <strong>Idade</strong>
+                          <span>{handleBirthDate(player.birth_date)}</span>
+                        </li>
+                        <li>
+                          <strong>Posição</strong>
+                          <span>{player.position}</span>
+                        </li>
+                        <li>
+                          <strong>Pé preferido</strong>
+                          <span>{player.preferred_footer}</span>
+                        </li>
+                        <li>
+                          <strong>Altura</strong>
+                          <span>
+                            {player.height}
+                            {' '}
+                            cm
+                          </span>
+                        </li>
+                        <li>
+                          <strong>Peso</strong>
+                          <span>
+                            {player.weight}
+                            {' '}
+                            kg
+                          </span>
+                        </li>
+                      </AttributesList>
+                    </div>
+                  </div>
+                  <div>
+                    <h3>Mapa de calor</h3>
+                    <img src={player.heat_map} alt="Mapa de calor" />
+                  </div>
+                </TopInformations>
+                <Observations>
+                  <h3>Observações</h3>
+                  <p>{player.note}</p>
+                </Observations>
+              </Informations>
+              <Attributes>
+                <h1>Atributos</h1>
+                <MenuTable>
+                  <ul>
+                    <li>
+                      <AttributeType
+                        isActive={selectedAttributeType === 'technical_attributes'}
+                        onClick={() => setSelectedAttributeType('technical_attributes')}
+                      >
+                        Técnicos
+                      </AttributeType>
+                    </li>
+                    <li>
+                      <AttributeType
+                        isActive={selectedAttributeType === 'mental_attributes'}
+                        onClick={() => setSelectedAttributeType('mental_attributes')}
+                      >
+                        Mentais
+                      </AttributeType>
+                    </li>
+                    <li>
+                      <AttributeType
+                        isActive={selectedAttributeType === 'physical_attributes'}
+                        onClick={() => setSelectedAttributeType('physical_attributes')}
+                      >
+                        Físicos
+                      </AttributeType>
+                    </li>
+                  </ul>
+                </MenuTable>
+                <Radar
+                  data={{
+                    labels: handleChartLabels(
+                      player[selectedAttributeType],
+                      labels[selectedAttributeType],
+                    ),
+                    datasets: [
+                      {
+                        borderWidth: 2,
+                        data: Object.values(player[selectedAttributeType]),
+                        pointBackgroundColor: theme.colors.blue,
+                        backgroundColor: rgba(theme.colors.blue, 0.25),
+                        borderColor: theme.colors.blue,
+                      },
+                    ],
+                  }}
+                  legend={{
+                    display: false,
+                  }}
+                />
+              </Attributes>
+            </>
+          )
+        }
       </Wrapper>
     </Container>
   );
