@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { useHistory } from 'react-router-dom';
 
@@ -9,16 +9,37 @@ import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
 
 import handlePluralWord from '../../utils/handlePluralWord';
+import hasPermission from '../../utils/hasPermission';
+
+import api from '../../services/api';
+
+import { useAuth } from '../../hooks/auth';
+import { useToast } from '../../hooks/toast';
 
 import {
   Container, Wrapper, Top, Filter,
 } from './styles';
 
+type Position = {
+  id: number;
+  name: string;
+  count_players: number;
+  owner: {
+    id: number;
+    name: string;
+  }
+};
+
 const Positions: React.FC = () => {
   const history = useHistory();
 
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
   const [filter, setFilter] = useState('per_position');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
   const [pagination, setPagination] = useState({
     page_count: 5,
     total_items: 5,
@@ -26,29 +47,7 @@ const Positions: React.FC = () => {
     per_page: 5,
     total_pages: 1,
   });
-  const [positions, setPositions] = useState([
-    {
-      id: 1,
-      name: 'Lateral Dir.',
-      count_players: 20,
-    }, {
-      id: 2,
-      name: 'Ponta esquerda',
-      count_players: 18,
-    }, {
-      id: 3,
-      name: 'Centroavante',
-      count_players: 25,
-    }, {
-      id: 4,
-      name: 'Ponta Direita',
-      count_players: 22,
-    }, {
-      id: 5,
-      name: 'Zagueiro',
-      count_players: 20,
-    },
-  ]);
+  const [positions, setPositions] = useState<Array<Position>>([]);
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -60,9 +59,73 @@ const Positions: React.FC = () => {
     }
   }, [filter]);
 
-  const handleGoToPage = useCallback((path: string) => {
-    history.push(path);
+  const handleGoToPage = useCallback((path: string, params?: Record<string, unknown>) => {
+    history.push(path, params);
   }, [history]);
+
+  async function fetchPositions() {
+    try {
+      const positionsResponse = await api.get('/positions', {
+        params: {
+          limit,
+          page,
+          search,
+        },
+      });
+
+      const { positions: fetchedPositions, ...paginationData } = positionsResponse.data;
+
+      setPositions(fetchedPositions);
+      setPagination(paginationData);
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter as posições!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
+
+  const searchPositions = useCallback(() => {
+    setPage(1);
+
+    if (page === 1) {
+      fetchPositions();
+    }
+  }, [search, page]);
+
+  const handleDeletePosition = useCallback(async (id: number) => {
+    try {
+      await api.delete(`/positions/${id}`);
+
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Posição excluída com sucesso.',
+      });
+
+      if (positions.length - 1 === 0) {
+        setPage((oldPage) => oldPage - 1);
+      } else {
+        setPositions((oldPositions) => [...oldPositions.filter((position) => position.id !== id)]);
+        setPagination((oldPagination) => ({
+          ...oldPagination,
+          page_count: oldPagination.page_count - 1,
+          total_items: oldPagination.total_items - 1,
+        }));
+      }
+    } catch (err) {
+      addToast({
+        title: 'Erro ao excluir a posição!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }, [positions, addToast]);
+
+  useEffect(() => {
+    fetchPositions();
+  }, [page]);
 
   return (
     <Container>
@@ -89,6 +152,7 @@ const Positions: React.FC = () => {
               placeholder={handlePlaceholderText()}
               value={search}
               onChange={({ target }) => setSearch(target.value)}
+              onKeyUp={(event) => event.key === 'Enter' && searchPositions()}
             />
             <FiSearch />
           </div>
@@ -98,6 +162,7 @@ const Positions: React.FC = () => {
             <tr>
               <th>Nome</th>
               <th>Quantidade de jogadores</th>
+              <th>Criador</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -110,23 +175,27 @@ const Positions: React.FC = () => {
                   {' '}
                   {handlePluralWord('jogador', position.count_players, 'es')}
                 </td>
+                <td>{position.owner.name}</td>
                 <td>
-                  <Actions>
-                    <button
-                      type="button"
-                      onClick={() => handleGoToPage(`/positions/edit/${position.id}`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                      /* Mano */
-                      }}
-                    >
-                      Excluir
-                    </button>
-                  </Actions>
+                  {
+                    hasPermission(user.id, user.role, position.owner.id) && (
+                    <Actions>
+                      <button
+                        type="button"
+                        onClick={() => handleGoToPage(`/positions/edit/${position.id}`, position)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => handleDeletePosition(position.id)}
+                      >
+                        Excluir
+                      </button>
+                    </Actions>
+                    )
+                  }
                 </td>
               </tr>
             ))}
@@ -134,7 +203,7 @@ const Positions: React.FC = () => {
         </Table>
         <Pagination
           data={pagination}
-          callback={(page: number) => setPagination({ ...pagination, current_page: page })}
+          callback={setPage}
         />
       </Wrapper>
     </Container>
