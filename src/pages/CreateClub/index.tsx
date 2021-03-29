@@ -10,6 +10,10 @@ import File from '../../components/File';
 
 import { useToast } from '../../hooks/toast';
 
+import api from '../../services/api';
+
+import getValidationErrors from '../../utils/getValidationErrors';
+
 import {
   Container, Wrapper, Top, FormContainer, InputRow,
 } from './styles';
@@ -27,7 +31,7 @@ const CreateClub: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = useCallback((data: FormData) => {
+  const handleSubmit = useCallback(async (data: FormData) => {
     setLoading(true);
 
     formRef.current?.setErrors({});
@@ -36,39 +40,55 @@ const CreateClub: React.FC = () => {
       name: Yup.string().required(),
     });
 
-    schema.validate(data, {
-      abortEarly: false,
-    })
-      .then(() => {
-        if (data.shield) {
-          console.log(data);
-        } else {
-          addToast({
-            title: 'Ocorreu um erro!',
-            type: 'error',
-            description: 'Preencha todo o formulário.',
-          });
-        }
-      }).catch((err) => {
-        const validationErrors = {};
-
-        if (err instanceof Yup.ValidationError) {
-          err.inner.forEach((error) => {
-            if (error.path) {
-              Object.assign(validationErrors, {
-                [error.path]: error.message,
-              });
-            }
-          });
-
-        formRef.current?.setErrors(validationErrors);
-        }
+    try {
+      await schema.validate(data, {
+        abortEarly: false,
       });
 
-    setTimeout(() => {
+      if (data.shield) {
+        const fileData = new FormData();
+
+        fileData.set('file', data.shield);
+
+        const fileResponse = await api.post('/files', fileData);
+
+        await api.post('/clubs', {
+          name: data.name,
+          shield_id: fileResponse.data.id,
+        });
+
+        addToast({
+          title: 'Sucesso!',
+          type: 'success',
+          description: 'Time cadastrado com sucesso.',
+        });
+
+        history.push('/clubs');
+      } else {
+        setLoading(false);
+
+        addToast({
+          title: 'Ocorreu um erro!',
+          type: 'error',
+          description: 'Selecione um escudo para o time.',
+        });
+      }
+    } catch (err) {
       setLoading(false);
-    }, 1000);
-  }, [setLoading]);
+
+      if (err instanceof Yup.ValidationError) {
+        const errors = getValidationErrors(err);
+
+        formRef.current?.setErrors(errors);
+      } else {
+        addToast({
+          title: 'Ocorreu um erro!',
+          type: 'error',
+          description: err.response?.data.message,
+        });
+      }
+    }
+  }, [setLoading, addToast]);
 
   const handleGoBack = useCallback(() => {
     history.goBack();
