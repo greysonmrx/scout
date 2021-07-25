@@ -33,6 +33,8 @@
     "react/require-default-props": "off",
     "no-unused-expressions": "off",
     "no-template-curly-in-string": "off",
+    "jsx-a11y/label-has-associated-control": "off",
+    "react/no-array-index-key": "off",
     "react/jsx-filename-extension": [
       1,
       {

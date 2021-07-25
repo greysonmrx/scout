@@ -19,6 +19,11 @@ import CreatePosition from '../pages/CreatePosition';
 import EditPosition from '../pages/EditPosition';
 
 import Comparison from '../pages/Comparison';
+import CreateComparison from '../pages/CreateComparison';
+
+import Reports from '../pages/Reports';
+import CreateReport from '../pages/CreateReport';
+import EditReport from '../pages/EditReport';
 
 const Routes: React.FC = () => (
   <Switch>
@@ -37,7 +42,12 @@ const Routes: React.FC = () => (
     <Route path="/positions/create" exact component={CreatePosition} isPrivate />
     <Route path="/positions/edit/:id" exact component={EditPosition} isPrivate />
 
-    <Route path="/comparison" exact component={Comparison} isPrivate />
+    <Route path="/comparison" exact component={CreateComparison} isPrivate />
+    <Route path="/comparison/:firstPlayer/:secondPlayer" exact component={Comparison} isPrivate />
+
+    <Route path="/reports" exact component={Reports} isPrivate />
+    <Route path="/reports/create" exact component={CreateReport} isPrivate />
+    <Route path="/reports/edit/:id" exact component={EditReport} isPrivate />
   </Switch>
 );
 

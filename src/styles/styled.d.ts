@@ -10,6 +10,7 @@ declare module 'styled-components' {
       blue: string;
       green: string;
       orange: string;
+      yellow: string;
       red: {
         enemy: string;
         error: string;

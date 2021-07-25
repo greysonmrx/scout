@@ -15,6 +15,12 @@ export const Container = styled.div`
     display: flex;
     align-items: center;
 
+    button {
+      svg {
+        margin-right: 7px;
+      }
+    }
+
     input {
       width: 250px;
       border: none;

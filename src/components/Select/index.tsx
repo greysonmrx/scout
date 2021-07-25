@@ -7,11 +7,13 @@ import { Container } from './styles';
 
 type SelectComponentProps = {
   name: string;
-  options: OptionsType<Record<string, unknown>> | GroupedOptionsType<Record<string, unknown>> | undefined;
+  options:
+    OptionsType<Record<string, unknown>> | GroupedOptionsType<Record<string, unknown>> | undefined;
   onChange(value: any): void;
   defaultValue?: any;
   label: string;
   placeholder: string;
+  isDisabled?: boolean;
 }
 
 const SelectComponent: React.FC<SelectComponentProps> = ({
@@ -21,6 +23,7 @@ const SelectComponent: React.FC<SelectComponentProps> = ({
   options,
   onChange,
   defaultValue,
+  isDisabled,
 }: SelectComponentProps) => {
   const theme = useTheme();
 
@@ -72,6 +75,7 @@ const SelectComponent: React.FC<SelectComponentProps> = ({
         placeholder={placeholder}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        isDisabled={isDisabled}
       />
     </Container>
   );

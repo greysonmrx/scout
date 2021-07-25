@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTheme } from 'styled-components';
 import { FiSearch } from 'react-icons/fi';
 import { useHistory } from 'react-router-dom';
 
@@ -7,8 +8,8 @@ import MenuTable from '../../components/MenuTable';
 import Table from '../../components/Table';
 import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
+import Rating from '../../components/Rating';
 
-import handlePluralWord from '../../utils/handlePluralWord';
 import hasPermission from '../../utils/hasPermission';
 
 import api from '../../services/api';
@@ -16,27 +17,40 @@ import api from '../../services/api';
 import { useAuth } from '../../hooks/auth';
 import { useToast } from '../../hooks/toast';
 
+import noImage from '../../assets/images/no-image.png';
+
 import {
-  Container, Wrapper, Top, Filter,
+  Container,
+  Wrapper,
+  Top,
+  Filter,
+  PlayerAvatar,
+  RecommendationField,
 } from './styles';
 
-type Position = {
+type Report = {
   id: number;
-  name: string;
-  count_players: number;
+  player: {
+    name: string;
+    avatar?: string;
+  };
+  current_capacity: number;
+  potential_capacity: number;
+  recommendation_percentage: number;
   owner: {
     id: number;
     name: string;
   }
 };
 
-const Positions: React.FC = () => {
+const Reports: React.FC = () => {
   const history = useHistory();
+  const theme = useTheme();
 
   const { user } = useAuth();
   const { addToast } = useToast();
 
-  const [filter, setFilter] = useState('per_position');
+  const [filter, setFilter] = useState('per_player');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(5);
@@ -47,25 +61,37 @@ const Positions: React.FC = () => {
     per_page: 5,
     total_pages: 1,
   });
-  const [positions, setPositions] = useState<Array<Position>>([]);
+  const [reports, setReports] = useState<Array<Report>>([]);
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
-      case 'per_position':
-        return 'Busque por posições';
+      case 'per_player':
+        return 'Busque por jogadores';
 
       default:
-        return 'Busque por posições';
+        return 'Busque por jogadores';
     }
   }, [filter]);
+
+  const handlePercentageColors = useCallback((percentage: number) => {
+    if (percentage > 66) {
+      return theme.colors.green;
+    }
+
+    if (percentage > 33) {
+      return theme.colors.orange;
+    }
+
+    return theme.colors.red.error;
+  }, []);
 
   const handleGoToPage = useCallback((path: string, params?: Record<string, unknown>) => {
     history.push(path, params);
   }, [history]);
 
-  async function fetchPositions() {
+  async function fetchReports() {
     try {
-      const positionsResponse = await api.get('/positions', {
+      const reportsResponse = await api.get('/reports', {
         params: {
           limit,
           page,
@@ -73,41 +99,41 @@ const Positions: React.FC = () => {
         },
       });
 
-      const { positions: fetchedPositions, ...paginationData } = positionsResponse.data;
+      const { reports: fetchedReports, ...paginationData } = reportsResponse.data;
 
-      setPositions(fetchedPositions);
+      setReports(fetchedReports);
       setPagination(paginationData);
     } catch (err) {
       addToast({
-        title: 'Erro ao obter as posições!',
+        title: 'Erro ao obter os relatórios!',
         type: 'error',
         description: err.response?.data.message,
       });
     }
   }
 
-  const searchPositions = useCallback(() => {
+  const searchReports = useCallback(() => {
     setPage(1);
 
     if (page === 1) {
-      fetchPositions();
+      fetchReports();
     }
   }, [search, page]);
 
-  const handleDeletePosition = useCallback(async (id: number) => {
+  const handleDeleteReport = useCallback(async (id: number) => {
     try {
-      await api.delete(`/positions/${id}`);
+      await api.delete(`/reports/${id}`);
 
       addToast({
         title: 'Sucesso!',
         type: 'success',
-        description: 'Posição excluída com sucesso.',
+        description: 'Relatório excluído com sucesso.',
       });
 
-      if (positions.length - 1 === 0 && page !== 1) {
+      if (reports.length - 1 === 0 && page !== 1) {
         setPage((oldPage) => oldPage - 1);
       } else {
-        setPositions((oldPositions) => [...oldPositions.filter((position) => position.id !== id)]);
+        setReports((oldReports) => [...oldReports.filter((report) => report.id !== id)]);
         setPagination((oldPagination) => ({
           ...oldPagination,
           page_count: oldPagination.page_count - 1,
@@ -116,32 +142,32 @@ const Positions: React.FC = () => {
       }
     } catch (err) {
       addToast({
-        title: 'Erro ao excluir a posição!',
+        title: 'Erro ao excluir o relatório!',
         type: 'error',
         description: err.response?.data.message,
       });
     }
-  }, [positions, page, addToast]);
+  }, [reports, page, addToast]);
 
   useEffect(() => {
-    fetchPositions();
+    fetchReports();
   }, [page]);
 
   return (
     <Container>
       <Wrapper>
         <Top>
-          <h1>Gerenciando posições</h1>
-          <Button onClick={() => handleGoToPage('/positions/create')}>
-            Cadastrar posições
+          <h1>Gerenciando relatórios</h1>
+          <Button onClick={() => handleGoToPage('/reports/create')}>
+            Cadastrar relatórios
           </Button>
         </Top>
         <MenuTable>
           <ul>
             <li>
               <Filter
-                isActive={filter === 'per_position'}
-                onClick={() => setFilter('per_position')}
+                isActive={filter === 'per_player'}
+                onClick={() => setFilter('per_player')}
               >
                 Todos as posições
               </Filter>
@@ -152,7 +178,7 @@ const Positions: React.FC = () => {
               placeholder={handlePlaceholderText()}
               value={search}
               onChange={({ target }) => setSearch(target.value)}
-              onKeyUp={(event) => event.key === 'Enter' && searchPositions()}
+              onKeyUp={(event) => event.key === 'Enter' && searchReports()}
             />
             <FiSearch />
           </div>
@@ -160,36 +186,62 @@ const Positions: React.FC = () => {
         <Table>
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>Quantidade de jogadores</th>
+              <th>Jogador</th>
+              <th>Capacidade atual</th>
+              <th>Capacidade potencial</th>
               <th>Criador</th>
+              <th>Recomendação</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {positions.map((position) => (
-              <tr key={position.id}>
-                <td>{position.name}</td>
+            {reports.map((report) => (
+              <tr key={report.id}>
                 <td>
-                  {position.count_players}
-                  {' '}
-                  {handlePluralWord('jogador', position.count_players, 'es')}
+                  <PlayerAvatar>
+                    <img
+                      src={report.player?.avatar ? report.player.avatar : noImage}
+                      alt={report.player.name}
+                    />
+                    {report.player.name}
+                  </PlayerAvatar>
                 </td>
-                <td>{position.owner.name}</td>
+                <td>
+                  <Rating
+                    margin={3}
+                    size={20}
+                    value={report.current_capacity}
+                  />
+                </td>
+                <td>
+                  <Rating
+                    margin={3}
+                    size={20}
+                    value={report.potential_capacity}
+                  />
+                </td>
+                <td>{report.owner.name}</td>
+                <td>
+                  <RecommendationField
+                    color={handlePercentageColors(report.recommendation_percentage)}
+                  >
+                    <span>{`${report.recommendation_percentage}%`}</span>
+                  </RecommendationField>
+                </td>
                 <td>
                   {
-                    hasPermission(user.id, user.role, position.owner.id) && (
+                    hasPermission(user.id, user.role, report.owner.id) && (
                     <Actions>
                       <button
                         type="button"
-                        onClick={() => handleGoToPage(`/positions/edit/${position.id}`, position)}
+                        onClick={() => handleGoToPage(`/reports/edit/${report.id}`, report)}
                       >
                         Editar
                       </button>
                       <button
                         type="button"
                         className="danger"
-                        onClick={() => handleDeletePosition(position.id)}
+                        onClick={() => handleDeleteReport(report.id)}
                       >
                         Excluir
                       </button>
@@ -210,4 +262,4 @@ const Positions: React.FC = () => {
   );
 };
 
-export default Positions;
+export default Reports;

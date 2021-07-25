@@ -45,6 +45,8 @@ const CreateClub: React.FC = () => {
         abortEarly: false,
       });
 
+      let fileId: number | undefined;
+
       if (data.shield) {
         const fileData = new FormData();
 
@@ -52,27 +54,21 @@ const CreateClub: React.FC = () => {
 
         const fileResponse = await api.post('/files', fileData);
 
-        await api.post('/clubs', {
-          name: data.name,
-          shield_id: fileResponse.data.id,
-        });
-
-        addToast({
-          title: 'Sucesso!',
-          type: 'success',
-          description: 'Time cadastrado com sucesso.',
-        });
-
-        history.push('/clubs');
-      } else {
-        setLoading(false);
-
-        addToast({
-          title: 'Ocorreu um erro!',
-          type: 'error',
-          description: 'Selecione um escudo para o time.',
-        });
+        fileId = fileResponse.data.id;
       }
+
+      await api.post('/clubs', {
+        name: data.name,
+        shield_id: fileId,
+      });
+
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Time cadastrado com sucesso.',
+      });
+
+      history.push('/clubs');
     } catch (err) {
       setLoading(false);
 

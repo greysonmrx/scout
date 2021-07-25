@@ -32,6 +32,11 @@ const Header: React.FC = () => {
             </Link>
           </li>
           <li>
+            <Link to="/reports">
+              <Item isActive={pathName === 'reports'}>Relatórios</Item>
+            </Link>
+          </li>
+          <li>
             <Link to="/comparison">
               <Item isActive={pathName === 'comparison'}>Comparação</Item>
             </Link>

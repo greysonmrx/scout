@@ -4,7 +4,7 @@ import React, {
 import * as Yup from 'yup';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { Form } from '@unform/web';
-import { FormHandles } from '@unform/core';
+import { FormHandles, Scope } from '@unform/core';
 
 import Input from '../../components/Input';
 import TextArea from '../../components/TextArea';
@@ -18,6 +18,9 @@ import { useToast } from '../../hooks/toast';
 
 import getValidationErrors from '../../utils/getValidationErrors';
 import handleFormatDate from '../../utils/handleFormatDate';
+import positionAttributes from '../../utils/positionAttributes';
+import handleSlugWord from '../../utils/handleSlugWord';
+import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
 import { labels } from '../../utils/handleChartLabels';
 
 import api from '../../services/api';
@@ -42,39 +45,18 @@ type FormData = {
     weight: number;
     note: string;
   };
-  technical_attributes: {
-    heading: number;
-    crossing: number;
-    tackling: number;
-    finishing: number;
-    dribbling: number;
-    long_throws: number;
-    free_kick_taking: number;
-    marking: number;
-    passing: number;
-    technique: number;
+};
+
+type AttributesForm = {
+  [attributeType: string]: {
+    [attribute: string]: number;
   };
-  mental_attributes: {
-    effort: number;
-    anticipation: number;
-    intelligence: number;
-    concentration: number;
-    determination: number;
-    flair: number;
-    teamwork: number;
-    leadership: number;
-    positioning: number;
-    off_the_ball: number;
-    vision: number;
-  };
-  physical_attributes: {
-    acceleration: number;
-    velocity: number;
-    agillity: number;
-    body_of_game: number;
-    strength: number;
-    pace: number;
-  };
+};
+
+type Attribute = {
+  name: string;
+  value: number;
+  type: string;
 };
 
 type Club = {
@@ -107,22 +89,37 @@ const EditPlayer: React.FC = () => {
   const { addToast } = useToast();
 
   const [initialData, setInitialData] = useState<any | undefined>();
-  const [position, setPosition] = useState<number>();
+  const [position, setPosition] = useState<{ value: number; label: string; }>();
   const [preferredFoot, setPreferredFoot] = useState<string>();
   const [club, setClub] = useState<number>();
   const [clubs, setClubs] = useState([]);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  function renderInputs(section: string, fields: Record<string, string>) {
-    return Object.keys(fields).map((fieldKey) => (
+  function renderInputs(fields: string[]) {
+    return fields.map((field) => (
       <Input
-        key={fieldKey}
-        name={`${section}.${fieldKey}`}
-        label={fields[fieldKey]}
+        key={field}
+        name={field}
+        label={labels[field] || field}
         type="number"
+        max={20}
+        min={0}
         required
       />
+    ));
+  }
+
+  function renderFieldsets(fields: Record<string, string[]>) {
+    return Object.keys(fields).map((fieldKey) => (
+      <fieldset key={fieldKey}>
+        <legend>{handleAttributesTypesName(fieldKey)}</legend>
+        <InputsContainer>
+          <Scope path={fieldKey}>
+            {renderInputs(fields[fieldKey])}
+          </Scope>
+        </InputsContainer>
+      </fieldset>
     ));
   }
 
@@ -183,21 +180,24 @@ const EditPlayer: React.FC = () => {
       const playerResponse = await api.get(`/players/${params.id}`);
 
       const {
-        technical_attributes, mental_attributes, physical_attributes, ...player
+        attributes, ...player
       } = playerResponse.data;
 
       Object.assign(player, {
         birth_date: handleFormatDate(player.birth_date),
       });
 
-      console.log({
-        player, technical_attributes, mental_attributes, physical_attributes,
+      const playerAttributes: Record<string, Record<string, number>> = {};
+
+      attributes.forEach((attribute: Attribute) => {
+        playerAttributes[attribute.type] = {
+          ...playerAttributes[attribute.type],
+          [attribute.name]: attribute.value,
+        };
       });
 
-      setInitialData({
-        player, technical_attributes, mental_attributes, physical_attributes,
-      });
-      setPosition(player.position_id);
+      setInitialData({ player, ...playerAttributes });
+      setPosition({ value: player.position_id, label: player.position });
       setPreferredFoot(player.preferred_footer);
       setClub(player.club_id);
     } catch (err) {
@@ -222,147 +222,6 @@ const EditPlayer: React.FC = () => {
         weight: Yup.number().default(0).min(0).required(FormErrors.REQUIRED),
         note: Yup.string().required(FormErrors.REQUIRED),
       }),
-      technical_attributes: Yup.object().shape({
-        heading: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        crossing: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        tackling: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        finishing: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        dribbling: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        long_throws: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        free_kick_taking: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        marking: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        passing: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        technique: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-      }),
-      mental_attributes: Yup.object().shape({
-        effort: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        anticipation: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        intelligence: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        concentration: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        determination: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        flair: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        teamwork: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        leadership: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        positioning: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        off_the_ball: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        vision: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-      }),
-      physical_attributes: Yup.object().shape({
-        acceleration: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        velocity: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        agillity: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        body_of_game: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        strength: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-        pace: Yup.number()
-          .default(0)
-          .min(0)
-          .max(20)
-          .required(FormErrors.REQUIRED),
-      }),
     });
 
     try {
@@ -370,7 +229,7 @@ const EditPlayer: React.FC = () => {
         abortEarly: false,
       });
 
-      const { player, ...attributes } = data;
+      const { player, ...restData } = data;
 
       if (player.avatar) {
         const avatarData = new FormData();
@@ -396,11 +255,29 @@ const EditPlayer: React.FC = () => {
         });
       }
 
+      const playerAttributes = restData as AttributesForm;
+
+      const attributesTypes = Object.keys(playerAttributes);
+
+      const attributes: Attribute[] = [];
+
+      attributesTypes.forEach((attributesType) => {
+        const nestedAttributes = Object.keys(playerAttributes[attributesType]);
+
+        nestedAttributes.forEach((nestedAttribute) => {
+          attributes.push({
+            name: nestedAttribute,
+            type: attributesType,
+            value: playerAttributes[attributesType][nestedAttribute],
+          });
+        });
+      });
+
       await api.put(`/players/${params.id}`, {
         ...player,
-        ...attributes,
+        attributes,
         club_id: club,
-        position_id: position,
+        position_id: position?.value,
         preferred_footer: preferredFoot,
       });
 
@@ -473,9 +350,10 @@ const EditPlayer: React.FC = () => {
                       required
                     />
                     <Select
+                      isDisabled
                       name="player.position"
                       label="Posição"
-                      onChange={({ value }) => setPosition(value)}
+                      onChange={(value) => setPosition(value)}
                       placeholder="Selecione uma posição"
                       defaultValue={{
                         value: initialData.player.position_id,
@@ -540,30 +418,9 @@ const EditPlayer: React.FC = () => {
                     />
                   </InputRow>
                 </fieldset>
-                <fieldset>
-                  <legend>Atributos Técnicos</legend>
-                  <InputsContainer>
-                    {
-                      renderInputs('technical_attributes', labels.technical_attributes)
-                    }
-                  </InputsContainer>
-                </fieldset>
-                <fieldset>
-                  <legend>Atributos Mentais</legend>
-                  <InputsContainer>
-                    {
-                      renderInputs('mental_attributes', labels.mental_attributes)
-                    }
-                  </InputsContainer>
-                </fieldset>
-                <fieldset>
-                  <legend>Atributos Físicos</legend>
-                  <InputsContainer>
-                    {
-                      renderInputs('physical_attributes', labels.physical_attributes)
-                    }
-                  </InputsContainer>
-                </fieldset>
+                {
+                  position && renderFieldsets(positionAttributes[handleSlugWord(position.label)])
+                }
               </FormContainer>
             </Form>
           ) : (

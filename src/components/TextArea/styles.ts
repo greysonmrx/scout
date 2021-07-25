@@ -18,7 +18,7 @@ export const Container = styled.div<ContainerProps>`
 
   label {
     font-weight: 600;
-    color: ${({ theme, isFocused }) => (isFocused ? darken(0.2, theme.colors.grey) : theme.colors.lightGrey)};
+    color: ${({ theme, isFocused }) => (isFocused ? darken(0.2, theme.colors.grey) : theme.colors.grey)};
     color: ${({ theme, isErrored }) => (isErrored ? theme.colors.red.error : null)};
     transition: all 0.2s;
   }

@@ -48,8 +48,6 @@ const SignIn: React.FC = () => {
 
         signIn({ email, password })
           .then(() => {
-            setLoading(false);
-
             addToast({
               title: 'Logado com sucesso!',
               description: 'Seus dados foram guardados com êxito.',

@@ -7,6 +7,7 @@ export const defaultTheme = {
     blue: '#007BFF',
     green: '#1A9856',
     orange: '#FA6401',
+    yellow: '#FFCC48',
     black: '#071633',
     red: {
       enemy: '#FF2350',

@@ -6,13 +6,18 @@ import { useHistory, useRouteMatch } from 'react-router-dom';
 import Radar from '../../components/Radar';
 import MenuTable from '../../components/MenuTable';
 import Button from '../../components/Button';
+import Collapse from '../../components/Collapse';
 
 import { useToast } from '../../hooks/toast';
 
-import handleChartLabels, { labels } from '../../utils/handleChartLabels';
+import handleChartLabels from '../../utils/handleChartLabels';
+import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
+import handleFormattedAttributes, { AttributesTypes } from '../../utils/handleFormattedAttributes';
 import handleBirthDate from '../../utils/handleBirthDate';
 
 import api from '../../services/api';
+
+import noImage from '../../assets/images/no-image.png';
 
 import {
   Container,
@@ -25,63 +30,53 @@ import {
   Avatar,
   Attributes,
   AttributeType,
+  Reports,
 } from './styles';
 
 type Player = {
   id: number;
   name: string;
-  heat_map: string;
-  avatar: string;
+  heat_map?: string;
+  avatar?: string;
   birth_date: string;
-  club_id: number;
-  position_id: number;
   preferred_footer: string;
   height: number;
   weight: number;
   note: string;
+  club_id: number;
+  position_id: number;
   club: {
     name: string;
-    shield: string;
+    shield?: string;
   };
   position: string;
-  technical_attributes: {
-    heading: number;
-    crossing: number;
-    tackling: number;
-    finishing: number;
-    dribbling: number;
-    long_throws: number;
-    free_kick_taking: number;
-    marking: number;
-    passing: number;
-    technique: number;
-  };
-  mental_attributes: {
-    effort: number;
-    anticipation: number;
-    intelligence: number;
-    concentration: number;
-    determination: number;
-    flair: number;
-    teamwork: number;
-    leadership: number;
-    positioning: number;
-    off_the_ball: number;
-    vision: number;
-  };
-  physical_attributes: {
-    acceleration: number;
-    velocity: number;
-    agillity: number;
-    body_of_game: number;
-    strength: number;
-    pace: number;
-  };
   owner: {
     id: number;
     name: string;
-    avatar: string;
+    avatar?: string;
   };
+  attributes: {
+    id: number;
+    name: string;
+    type: string;
+    value: number;
+  }[];
+  reports: {
+    id: number;
+    note: string;
+    current_capacity: number;
+    potential_capacity: number;
+    pros: string[];
+    cons: string[];
+    recommendation_percentage: number;
+    recommendation_note: string;
+    owner: {
+      id: number;
+      name: string;
+      avatar?: string;
+    };
+    created_at: string;
+  }[];
 };
 
 const PlayerDetails: React.FC = () => {
@@ -91,16 +86,22 @@ const PlayerDetails: React.FC = () => {
 
   const { addToast } = useToast();
 
-  const [selectedAttributeType, setSelectedAttributeType] = useState<
-    'technical_attributes' |
-    'mental_attributes' |
-    'physical_attributes'
-  >('technical_attributes');
+  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('');
+  const [attributesTypes, setAttributesTypes] = useState<string[]>([]);
   const [player, setPlayer] = useState<Player | undefined>();
+  const [attributes, setAttributes] = useState<AttributesTypes>({});
 
   async function fetchPlayerDetails() {
     try {
-      const playerResponse = await api.get(`players/${params.id}`);
+      const playerResponse = await api.get<Player>(`players/${params.id}`);
+
+      const [attributesKeys, formattedAttributes] = handleFormattedAttributes(
+        playerResponse.data.attributes,
+      );
+
+      setAttributesTypes(attributesKeys);
+      setSelectedAttributeType(attributesKeys[0]);
+      setAttributes(formattedAttributes);
 
       setPlayer(playerResponse.data);
     } catch (err) {
@@ -114,7 +115,7 @@ const PlayerDetails: React.FC = () => {
 
   const handleGoBack = useCallback(() => {
     history.goBack();
-  }, []);
+  }, [history]);
 
   useEffect(() => {
     fetchPlayerDetails();
@@ -136,8 +137,20 @@ const PlayerDetails: React.FC = () => {
                 <TopInformations>
                   <div>
                     <Avatar>
-                      <img src={player.club.shield} alt={player.club.name} />
-                      <img src={player.avatar} alt={player.name} />
+                      {
+                        player.club.shield && (
+                          <img
+                            src={player.club.shield}
+                            alt={player.club.name}
+                            className="club-shield"
+                          />
+                        )
+                      }
+                      <img
+                        src={player.avatar ? player.avatar : noImage}
+                        alt={player.name}
+                        className="player-avatar"
+                      />
                     </Avatar>
                     <div>
                       <h3>{player.name}</h3>
@@ -176,7 +189,7 @@ const PlayerDetails: React.FC = () => {
                   </div>
                   <div>
                     <h3>Mapa de calor</h3>
-                    <img src={player.heat_map} alt="Mapa de calor" />
+                    <img src={player.heat_map ? player.heat_map : noImage} alt="Mapa de calor" />
                   </div>
                 </TopInformations>
                 <Observations>
@@ -188,42 +201,27 @@ const PlayerDetails: React.FC = () => {
                 <h1>Atributos</h1>
                 <MenuTable>
                   <ul>
-                    <li>
-                      <AttributeType
-                        isActive={selectedAttributeType === 'technical_attributes'}
-                        onClick={() => setSelectedAttributeType('technical_attributes')}
-                      >
-                        Técnicos
-                      </AttributeType>
-                    </li>
-                    <li>
-                      <AttributeType
-                        isActive={selectedAttributeType === 'mental_attributes'}
-                        onClick={() => setSelectedAttributeType('mental_attributes')}
-                      >
-                        Mentais
-                      </AttributeType>
-                    </li>
-                    <li>
-                      <AttributeType
-                        isActive={selectedAttributeType === 'physical_attributes'}
-                        onClick={() => setSelectedAttributeType('physical_attributes')}
-                      >
-                        Físicos
-                      </AttributeType>
-                    </li>
+                    {
+                      attributesTypes.map((attributeType) => (
+                        <li key={attributeType}>
+                          <AttributeType
+                            isActive={selectedAttributeType === attributeType}
+                            onClick={() => setSelectedAttributeType(attributeType)}
+                          >
+                            {handleAttributesTypesName(attributeType)}
+                          </AttributeType>
+                        </li>
+                      ))
+                    }
                   </ul>
                 </MenuTable>
                 <Radar
                   data={{
-                    labels: handleChartLabels(
-                      player[selectedAttributeType],
-                      labels[selectedAttributeType],
-                    ),
+                    labels: handleChartLabels(attributes[selectedAttributeType])[0],
                     datasets: [
                       {
                         borderWidth: 2,
-                        data: Object.values(player[selectedAttributeType]),
+                        data: handleChartLabels(attributes[selectedAttributeType])[1],
                         pointBackgroundColor: theme.colors.blue,
                         backgroundColor: rgba(theme.colors.blue, 0.25),
                         borderColor: theme.colors.blue,
@@ -235,6 +233,21 @@ const PlayerDetails: React.FC = () => {
                   }}
                 />
               </Attributes>
+              <Reports>
+                {
+                  player.reports.length > 0 && (
+                    <h1>Relatórios</h1>
+                  )
+                }
+                {
+                  player.reports.map((report) => (
+                    <Collapse
+                      key={report.id}
+                      data={report}
+                    />
+                  ))
+                }
+              </Reports>
             </>
           )
         }

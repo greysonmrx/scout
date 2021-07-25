@@ -112,13 +112,13 @@ export const Avatar = styled.div`
   img {
     width: 180px;
 
-    &:first-child {
+    &.club-shield {
       position: absolute;
       opacity: 0.1;
       z-index: 1;
     }
 
-    &:last-child {
+    &.player-avatar {
       position: relative;
       z-index: 2;
       height: 100%;
@@ -156,4 +156,12 @@ export const AttributeType = styled.button<AttributeTypeProps>`
 
     return null;
   }};
+`;
+
+export const Reports = styled.div`
+  padding-top: 50px;
+
+  h1 {
+    padding-bottom: 40px;
+  }
 `;

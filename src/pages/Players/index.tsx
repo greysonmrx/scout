@@ -1,6 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from 'react';
+import { Form } from '@unform/web';
+import { FormHandles } from '@unform/core';
 import { useTheme } from 'styled-components';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiTrash2 } from 'react-icons/fi';
+import { RiCloseLine } from 'react-icons/ri';
+import { FaFilter } from 'react-icons/fa';
 import { useHistory } from 'react-router-dom';
 
 import MenuTable from '../../components/MenuTable';
@@ -8,44 +14,62 @@ import Button from '../../components/Button';
 import Table from '../../components/Table';
 import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
+import Input from '../../components/Input';
+import Select from '../../components/Select';
 
 import handleBirthDate from '../../utils/handleBirthDate';
 import hasPermission from '../../utils/hasPermission';
+import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
+import positionAttributes from '../../utils/positionAttributes';
+import { labels } from '../../utils/handleChartLabels';
 
 import api from '../../services/api';
 
 import { useToast } from '../../hooks/toast';
 import { useAuth } from '../../hooks/auth';
 
+import noImage from '../../assets/images/no-image.png';
+
 import {
   Container,
   Wrapper,
   Top,
+  Modal,
   Filter,
   PlayerAvatar,
   ClubField,
   RecommendationField,
 } from './styles';
+import handleSlugWord from '../../utils/handleSlugWord';
+
+type Attribute = {
+  name: string;
+  type: string;
+  value: number;
+  operator: string;
+}
 
 type Player = {
   id: number;
   name: string;
-  avatar: string;
+  avatar?: string;
   birth_date: string;
   club: {
     name: string;
-    shield: string;
+    shield?: string;
   };
   position: string;
   owner: {
     id: number;
     name: string;
   };
+  recommendation: number;
 };
 
 const Players: React.FC = () => {
   const theme = useTheme();
   const history = useHistory();
+  const filterFormRef = useRef<FormHandles>(null);
 
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -62,6 +86,10 @@ const Players: React.FC = () => {
     total_pages: 0,
   });
   const [players, setPlayers] = useState<Array<Player>>([]);
+  const [filterModalIsOpened, setFilterModalIsOpened] = useState(false);
+  const [attributes, setAttributes] = useState<Attribute[]>([]);
+  const [positions, setPositions] = useState([]);
+  const [selectedPosition, setSelectedPosition] = useState<{ value: number; label: string; } | undefined>();
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -75,6 +103,19 @@ const Players: React.FC = () => {
         return 'Busque por jogadores';
     }
   }, [filter]);
+
+  const handleChangeAttributes = useCallback((position: number, field: string, value: string | number) => {
+    setAttributes((oldState) => oldState.map((attribute, index) => {
+      if (index === position) {
+        return {
+          ...attribute,
+          [field]: value,
+        };
+      }
+
+      return attribute;
+    }));
+  }, []);
 
   const handlePercentageColors = useCallback((percentage: number) => {
     if (percentage > 66) {
@@ -96,6 +137,82 @@ const Players: React.FC = () => {
     handleGoToPage(`/players/details/${player_id}`);
   }, [handleGoToPage]);
 
+  const handleAdvancedSearch = useCallback(async (data) => {
+    setFilterModalIsOpened(false);
+
+    try {
+      const { start_date, end_date, recommendation_percentage } = data;
+
+      const currentDate = new Date();
+
+      console.log(start_date, end_date, recommendation_percentage);
+      console.log(attributes);
+      console.log(selectedPosition);
+
+      const playersResponse = await api.get('/players', {
+        params: {
+          filter: 'per_advanced_search',
+          page,
+          limit,
+          position_id: selectedPosition?.value,
+          start_date: `${currentDate.getFullYear() - start_date}-01-01`,
+          end_date: `${currentDate.getFullYear() - end_date}-01-01`,
+          recommendation_percentage,
+          attributes: attributes.length > 0 ? JSON.stringify(attributes) : undefined,
+        },
+      });
+
+      const { players: fetchedPlayers, ...paginationData } = playersResponse.data;
+
+      setPlayers(fetchedPlayers);
+      setPagination(paginationData);
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter jogadores!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }, [attributes, selectedPosition, limit, page]);
+
+  const handleAddAttribute = useCallback(() => {
+    setAttributes((oldState) => [
+      ...oldState,
+      {
+        name: '',
+        operator: '=',
+        type: '',
+        value: 0,
+      },
+    ]);
+  }, []);
+
+  const handleRemoveAttribute = useCallback((position: number) => {
+    setAttributes((oldState) => oldState.filter((_, index) => index !== position));
+  }, []);
+
+  async function fetchPositions() {
+    try {
+      const response = await api.get('/positions', {
+        params: {
+          limit: 3000,
+          page: 1,
+        },
+      });
+
+      setPositions(response.data.positions.map((position: any) => ({
+        value: position.id,
+        label: position.name,
+      })));
+    } catch (err) {
+      addToast({
+        title: 'Erro ao obter posições!',
+        type: 'error',
+        description: err.response?.data.message,
+      });
+    }
+  }
+
   async function fetchPlayers() {
     try {
       const playersResponse = await api.get('/players', {
@@ -103,6 +220,7 @@ const Players: React.FC = () => {
           limit,
           page,
           search,
+          filter,
         },
       });
 
@@ -137,7 +255,7 @@ const Players: React.FC = () => {
         description: 'Jogador excluído com sucesso.',
       });
 
-      if (players.length - 1 === 0) {
+      if (players.length - 1 === 0 && page !== 1) {
         setPage((oldPage) => oldPage - 1);
       } else {
         setPlayers((oldPlayers) => [...oldPlayers.filter((player) => player.id !== id)]);
@@ -154,11 +272,27 @@ const Players: React.FC = () => {
         description: err.response?.data.message,
       });
     }
-  }, [players, addToast]);
+  }, [players, page, addToast]);
 
   useEffect(() => {
     fetchPlayers();
   }, [page]);
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
+  useEffect(() => {
+    setSearch('');
+
+    if (filter !== 'per_advanced_search') {
+      if (page === 1) {
+        fetchPlayers();
+      }
+
+      setPage(1);
+    }
+  }, [filter, page]);
 
   return (
     <Container>
@@ -187,16 +321,38 @@ const Players: React.FC = () => {
                 Por time
               </Filter>
             </li>
+            <li>
+              <Filter
+                isActive={filter === 'per_advanced_search'}
+                onClick={() => setFilter('per_advanced_search')}
+              >
+                Busca avançada
+              </Filter>
+            </li>
           </ul>
           <div>
-            <input
-              placeholder={handlePlaceholderText()}
-              type="search"
-              value={search}
-              onChange={({ target }) => setSearch(target.value)}
-              onKeyUp={(event) => event.key === 'Enter' && searchPlayers()}
-            />
-            <FiSearch />
+            {
+              filter === 'per_advanced_search' ? (
+                <Button type="button" onClick={() => setFilterModalIsOpened(true)}>
+                  <FaFilter
+                    size={14}
+                    color={theme.colors.white}
+                  />
+                  Filtros
+                </Button>
+              ) : (
+                <>
+                  <input
+                    placeholder={handlePlaceholderText()}
+                    type="search"
+                    value={search}
+                    onChange={({ target }) => setSearch(target.value)}
+                    onKeyUp={(event) => event.key === 'Enter' && searchPlayers()}
+                  />
+                  <FiSearch />
+                </>
+              )
+            }
           </div>
         </MenuTable>
         <Table>
@@ -207,7 +363,7 @@ const Players: React.FC = () => {
               <th>Time</th>
               <th>Idade</th>
               <th>Posição</th>
-              <th>Criador</th>
+              <th>Recomendação</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -216,25 +372,30 @@ const Players: React.FC = () => {
               <tr key={player.id}>
                 <td>
                   <PlayerAvatar>
-                    <img src={player.avatar} alt={player.name} />
+                    <img
+                      src={player.avatar ? player.avatar : noImage}
+                      alt={player.name}
+                    />
                   </PlayerAvatar>
                 </td>
                 <td>{player.name}</td>
                 <td>
                   <ClubField>
-                    <img src={player.club.shield} alt={player.club.name} />
+                    <img
+                      src={player.club.shield ? player.club.shield : noImage}
+                      alt={player.club.name}
+                    />
                     {player.club.name}
                   </ClubField>
                 </td>
                 <td>{handleBirthDate(player.birth_date)}</td>
                 <td>{player.position}</td>
                 <td>
-                  {/* <RecommendationField
+                  <RecommendationField
                     color={handlePercentageColors(player.recommendation)}
                   >
                     <span>{`${player.recommendation}%`}</span>
-                  </RecommendationField> */}
-                  {player.owner.name}
+                  </RecommendationField>
                 </td>
                 <td>
                   <Actions>
@@ -274,6 +435,145 @@ const Players: React.FC = () => {
           callback={setPage}
         />
       </Wrapper>
+      {filterModalIsOpened && (
+      <Modal>
+        <div>
+          <header>
+            <h3>Filtros</h3>
+            <button type="button" onClick={() => setFilterModalIsOpened(false)}>
+              <RiCloseLine
+                size={24}
+                color={theme.colors.red.error}
+              />
+            </button>
+          </header>
+          <main>
+            <Form ref={filterFormRef} onSubmit={handleAdvancedSearch}>
+              <div className="inputs-container">
+                <div className="date">
+                  <Input
+                    name="start_date"
+                    label="Idade"
+                    placeholder="De"
+                    type="number"
+                    min={0}
+                    max={100}
+                  />
+                  <p>-</p>
+                  <Input
+                    name="end_date"
+                    type="number"
+                    placeholder="Até"
+                    min={0}
+                    max={100}
+                  />
+                </div>
+                <Select
+                  name="position_id"
+                  label="Posição"
+                  onChange={({ value, label }) => setSelectedPosition({ value, label })}
+                  placeholder="Selecione uma posição"
+                  options={positions}
+                />
+                <Input
+                  label="Recomendação"
+                  placeholder="Recomendação mínima"
+                  name="recommendation_percentage"
+                  type="number"
+                  min={0}
+                  max={100}
+                />
+              </div>
+              {
+                selectedPosition && (
+                  <div className="attributes-container">
+                    <header>
+                      <label htmlFor="attributes">Atributos</label>
+                      <button type="button" onClick={handleAddAttribute}>Novo atributo</button>
+                    </header>
+                    <div className="inputs">
+                      {
+                      attributes.map((attribute, index) => (
+                        <div className="input" key={index}>
+                          <Select
+                            name="attribute_type"
+                            onChange={({ value }) => handleChangeAttributes(index, 'type', value)}
+                            label=""
+                            placeholder="Tipo"
+                            options={Object.keys(positionAttributes[handleSlugWord(selectedPosition.label)]).map((type) => ({
+                              value: type,
+                              label: handleAttributesTypesName(type),
+                            }))}
+                          />
+                          <Select
+                            name="attribute_name"
+                            onChange={({ value }) => handleChangeAttributes(index, 'name', value)}
+                            placeholder="Nome"
+                            label=""
+                            isDisabled={!attribute.type}
+                            options={attribute.type ? positionAttributes[handleSlugWord(selectedPosition.label)][attribute.type].map((name) => ({
+                              value: name,
+                              label: labels[name],
+                            })) : []}
+                          />
+                          <Select
+                            name="attribute_operator"
+                            onChange={({ value }) => handleChangeAttributes(index, 'operator', value)}
+                            label=""
+                            placeholder="Operador"
+                            options={[
+                              {
+                                value: '>',
+                                label: 'Maior',
+                              },
+                              {
+                                value: '<',
+                                label: 'Menor',
+                              },
+                              {
+                                value: '>=',
+                                label: 'Maior ou igual',
+                              },
+                              {
+                                value: '<=',
+                                label: 'Menor ou igual',
+                              },
+                              {
+                                value: '=',
+                                label: 'Igual',
+                              },
+                            ]}
+                          />
+                          <Input
+                            name="attribute_value"
+                            placeholder="Valor"
+                            type="number"
+                            min={0}
+                            max={20}
+                            value={attribute.value}
+                            onChange={(event) => handleChangeAttributes(index, 'value', event.target.value)}
+                          />
+                          <button type="button" onClick={() => handleRemoveAttribute(index)}>
+                            <FiTrash2
+                              size={24}
+                              color={theme.colors.red.error}
+                            />
+                          </button>
+                        </div>
+                      ))
+                    }
+                    </div>
+                  </div>
+                )
+              }
+              <Button type="submit">
+                Buscar jogadores
+              </Button>
+            </Form>
+          </main>
+        </div>
+      </Modal>
+      )}
     </Container>
   );
 };

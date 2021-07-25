@@ -16,6 +16,8 @@ import hasPermission from '../../utils/hasPermission';
 import { useAuth } from '../../hooks/auth';
 import { useToast } from '../../hooks/toast';
 
+import noImage from '../../assets/images/no-image.png';
+
 import {
   Container, Wrapper, Top, Filter, ClubShield,
 } from './styles';
@@ -23,7 +25,7 @@ import {
 type Club = {
   id: number;
   name: string;
-  shield: string;
+  shield?: string;
   count_players: number;
   owner: {
     id: number;
@@ -97,7 +99,7 @@ const Clubs: React.FC = () => {
         description: 'Time excluído com sucesso.',
       });
 
-      if (clubs.length - 1 === 0) {
+      if (clubs.length - 1 === 0 && page !== 1) {
         setPage((oldPage) => oldPage - 1);
       } else {
         setClubs((oldClubs) => [...oldClubs.filter((club) => club.id !== id)]);
@@ -114,7 +116,7 @@ const Clubs: React.FC = () => {
         description: err.response?.data.message,
       });
     }
-  }, [clubs, addToast]);
+  }, [clubs, page, addToast]);
 
   const searchClubs = useCallback(() => {
     setPage(1);
@@ -173,7 +175,7 @@ const Clubs: React.FC = () => {
               <tr key={club.id}>
                 <td>
                   <ClubShield>
-                    <img src={club.shield} alt={club.name} />
+                    <img src={club?.shield ? club.shield : noImage} alt={club.name} />
                   </ClubShield>
                 </td>
                 <td>{club.name}</td>
