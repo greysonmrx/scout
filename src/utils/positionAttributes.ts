@@ -44,11 +44,13 @@ export default {
   },
   [handleSlugWord('Goleiro')]: {
     technical_attributes: [
-      'heading',
-      'crossing',
-      'tackling',
-      'finishing',
-      'dribbling',
+      'game_with_the_feet',
+      'reposition_hands',
+      'reposition_feet',
+      'reflection',
+      'positioning',
+      'penalty',
+      'goal_exit',
     ],
     mental_attributes: [
       'effort',

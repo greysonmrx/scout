@@ -42,6 +42,7 @@ import {
   ClubField,
   RecommendationField,
 } from './styles';
+import { useAdvancedSearch } from '../../hooks/advancedSearch';
 
 type Attribute = {
   name: string;
@@ -74,6 +75,18 @@ const Players: React.FC = () => {
 
   const { user } = useAuth();
   const { addToast } = useToast();
+  const {
+    attributes,
+    position,
+    startDate,
+    endDate,
+    recommendation,
+    setPosition,
+    setAttributes,
+    setEndDate,
+    setStartDate,
+    setRecommendation,
+  } = useAdvancedSearch();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('per_player');
@@ -88,12 +101,7 @@ const Players: React.FC = () => {
   });
   const [players, setPlayers] = useState<Array<Player>>([]);
   const [filterModalIsOpened, setFilterModalIsOpened] = useState(false);
-  const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [positions, setPositions] = useState([]);
-  const [
-    selectedPosition,
-    setSelectedPosition,
-  ] = useState<{ value: number; label: string; } | undefined>();
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -109,9 +117,9 @@ const Players: React.FC = () => {
   }, [filter]);
 
   const handleChangeAttributes = useCallback(
-    (position: number, field: string, value: string | number) => {
-      setAttributes((oldState) => oldState.map((attribute, index) => {
-        if (index === position) {
+    (position_id: number, field: string, value: string | number) => {
+      setAttributes(attributes.map((attribute, index) => {
+        if (index === position_id) {
           return {
             ...attribute,
             [field]: value,
@@ -120,7 +128,7 @@ const Players: React.FC = () => {
 
         return attribute;
       }));
-    }, [],
+    }, [attributes],
   );
 
   const handlePercentageColors = useCallback((percentage: number) => {
@@ -143,27 +151,21 @@ const Players: React.FC = () => {
     handleGoToPage(`/players/details/${player_id}`);
   }, [handleGoToPage]);
 
-  const handleAdvancedSearch = useCallback(async (data) => {
+  const handleAdvancedSearch = useCallback(async () => {
     setFilterModalIsOpened(false);
 
     try {
-      const { start_date, end_date, recommendation_percentage } = data;
-
       const currentDate = new Date();
-
-      console.log(start_date, end_date, recommendation_percentage);
-      console.log(attributes);
-      console.log(selectedPosition);
 
       const playersResponse = await api.get('/players', {
         params: {
           filter: 'per_advanced_search',
           page,
           limit,
-          position_id: selectedPosition?.value,
-          start_date: `${currentDate.getFullYear() - start_date}-01-01`,
-          end_date: `${currentDate.getFullYear() - end_date}-01-01`,
-          recommendation_percentage,
+          position_id: position?.value || undefined,
+          start_date: startDate ? `${currentDate.getFullYear() - startDate}-01-01` : undefined,
+          end_date: endDate ? `${currentDate.getFullYear() - endDate}-01-01` : undefined,
+          recommendation_percentage: recommendation || 0,
           attributes: attributes.length > 0 ? JSON.stringify(attributes) : undefined,
         },
       });
@@ -179,11 +181,11 @@ const Players: React.FC = () => {
         description: err.response?.data.message,
       });
     }
-  }, [attributes, selectedPosition, limit, page]);
+  }, [attributes, position, limit, page, startDate, endDate, recommendation]);
 
   const handleAddAttribute = useCallback(() => {
-    setAttributes((oldState) => [
-      ...oldState,
+    setAttributes([
+      ...attributes,
       {
         name: '',
         operator: '=',
@@ -191,11 +193,11 @@ const Players: React.FC = () => {
         value: 0,
       },
     ]);
-  }, []);
+  }, [attributes]);
 
-  const handleRemoveAttribute = useCallback((position: number) => {
-    setAttributes((oldState) => oldState.filter((_, index) => index !== position));
-  }, []);
+  const handleRemoveAttribute = useCallback((position_id: number) => {
+    setAttributes(attributes.filter((_, index) => index !== position_id));
+  }, [attributes]);
 
   async function fetchPositions() {
     try {
@@ -206,9 +208,9 @@ const Players: React.FC = () => {
         },
       });
 
-      setPositions(response.data.positions.map((position: any) => ({
-        value: position.id,
-        label: position.name,
+      setPositions(response.data.positions.map((fetchedPosition: any) => ({
+        value: fetchedPosition.id,
+        label: fetchedPosition.name,
       })));
     } catch (err) {
       addToast({
@@ -279,6 +281,10 @@ const Players: React.FC = () => {
       });
     }
   }, [players, page, addToast]);
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
 
   useEffect(() => {
     fetchPlayers('search');
@@ -454,6 +460,8 @@ const Players: React.FC = () => {
                     type="number"
                     min={0}
                     max={100}
+                    onChange={(event) => setStartDate(Number(event.target.value))}
+                    defaultValue={startDate}
                   />
                   <p>-</p>
                   <Input
@@ -462,14 +470,23 @@ const Players: React.FC = () => {
                     placeholder="Até"
                     min={0}
                     max={100}
+                    onChange={(event) => setEndDate(Number(event.target.value))}
+                    defaultValue={endDate}
                   />
                 </div>
                 <Select
                   name="position_id"
                   label="Posição"
-                  onChange={({ value, label }) => setSelectedPosition({ value, label })}
+                  onChange={({ value, label }) => setPosition({ value, label })}
                   placeholder="Selecione uma posição"
-                  options={positions}
+                  defaultValue={position}
+                  options={[
+                    {
+                      value: 0,
+                      label: 'Selecione uma posição',
+                    },
+                    ...positions,
+                  ]}
                 />
                 <Input
                   label="Recomendação"
@@ -478,10 +495,12 @@ const Players: React.FC = () => {
                   type="number"
                   min={0}
                   max={100}
+                  onChange={(event) => setRecommendation(Number(event.target.value))}
+                  defaultValue={recommendation}
                 />
               </div>
               {
-                selectedPosition && (
+                !!position.value && (
                   <div className="attributes-container">
                     <header>
                       <label htmlFor="attributes">Atributos</label>
@@ -496,7 +515,9 @@ const Players: React.FC = () => {
                             onChange={({ value }) => handleChangeAttributes(index, 'type', value)}
                             label=""
                             placeholder="Tipo"
-                            options={Object.keys(positionAttributes[handleSlugWord(selectedPosition.label)]).map((type) => ({
+                            options={Object.keys(
+                              positionAttributes[handleSlugWord(position.label)],
+                            ).map((type) => ({
                               value: type,
                               label: handleAttributesTypesName(type),
                             }))}
@@ -507,10 +528,12 @@ const Players: React.FC = () => {
                             placeholder="Nome"
                             label=""
                             isDisabled={!attribute.type}
-                            options={attribute.type ? positionAttributes[handleSlugWord(selectedPosition.label)][attribute.type].map((name) => ({
-                              value: name,
-                              label: labels[name],
-                            })) : []}
+                            options={attribute.type
+                              ? positionAttributes[handleSlugWord(position.label)][attribute.type]
+                                .map((name) => ({
+                                  value: name,
+                                  label: labels[name],
+                                })) : []}
                           />
                           <Select
                             name="attribute_operator"
