@@ -66,13 +66,13 @@ const Clubs: React.FC = () => {
     history.push(path, params);
   }, [history]);
 
-  async function fetchClubs() {
+  async function fetchClubs(by?: string) {
     try {
       const clubsResponse = await api.get('/clubs', {
         params: {
           limit,
           page,
-          search,
+          search: by ? search : undefined,
         },
       });
 
@@ -122,13 +122,19 @@ const Clubs: React.FC = () => {
     setPage(1);
 
     if (page === 1) {
-      fetchClubs();
+      fetchClubs('search');
     }
   }, [search, page]);
 
   useEffect(() => {
+    fetchClubs('search');
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    setSearch('');
     fetchClubs();
-  }, [page, filter]);
+  }, [filter]);
 
   return (
     <Container>

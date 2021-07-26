@@ -72,16 +72,13 @@ const Lists: React.FC = () => {
     history.push(path, params);
   }, [history]);
 
-  async function fetchLists() {
-    console.log(search);
-    console.log(filter);
-
+  async function fetchLists(by?: string) {
     try {
       const listsResponse = await api.get('/lists', {
         params: {
           limit,
           page,
-          search,
+          search: by ? search : undefined,
           filter,
         },
       });
@@ -103,7 +100,7 @@ const Lists: React.FC = () => {
     setPage(1);
 
     if (page === 1) {
-      fetchLists();
+      fetchLists('search');
     }
   }, [search, page, filter]);
 
@@ -137,8 +134,14 @@ const Lists: React.FC = () => {
   }, [lists, page, addToast]);
 
   useEffect(() => {
+    fetchLists('search');
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    setSearch('');
     fetchLists();
-  }, [page, filter]);
+  }, [filter]);
 
   return (
     <Container>

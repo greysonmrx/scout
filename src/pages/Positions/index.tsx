@@ -63,13 +63,13 @@ const Positions: React.FC = () => {
     history.push(path, params);
   }, [history]);
 
-  async function fetchPositions() {
+  async function fetchPositions(by?: string) {
     try {
       const positionsResponse = await api.get('/positions', {
         params: {
           limit,
           page,
-          search,
+          search: by ? search : undefined,
         },
       });
 
@@ -90,7 +90,7 @@ const Positions: React.FC = () => {
     setPage(1);
 
     if (page === 1) {
-      fetchPositions();
+      fetchPositions('search');
     }
   }, [search, page]);
 
@@ -124,8 +124,14 @@ const Positions: React.FC = () => {
   }, [positions, page, addToast]);
 
   useEffect(() => {
-    fetchPositions();
+    fetchPositions('search');
   }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    setSearch('');
+    fetchPositions();
+  }, [filter]);
 
   return (
     <Container>

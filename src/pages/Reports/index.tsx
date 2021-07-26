@@ -89,13 +89,13 @@ const Reports: React.FC = () => {
     history.push(path, params);
   }, [history]);
 
-  async function fetchReports() {
+  async function fetchReports(by?: string) {
     try {
       const reportsResponse = await api.get('/reports', {
         params: {
           limit,
           page,
-          search,
+          search: by ? search : undefined,
         },
       });
 
@@ -116,7 +116,7 @@ const Reports: React.FC = () => {
     setPage(1);
 
     if (page === 1) {
-      fetchReports();
+      fetchReports('search');
     }
   }, [search, page]);
 
@@ -150,8 +150,14 @@ const Reports: React.FC = () => {
   }, [reports, page, addToast]);
 
   useEffect(() => {
-    fetchReports();
+    fetchReports('search');
   }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    setSearch('');
+    fetchReports();
+  }, [filter]);
 
   return (
     <Container>

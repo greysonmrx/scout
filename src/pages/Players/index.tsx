@@ -219,13 +219,13 @@ const Players: React.FC = () => {
     }
   }
 
-  async function fetchPlayers() {
+  async function fetchPlayers(by?: string) {
     try {
       const playersResponse = await api.get('/players', {
         params: {
           limit,
           page,
-          search,
+          search: by ? search : undefined,
           filter,
         },
       });
@@ -247,7 +247,7 @@ const Players: React.FC = () => {
     setPage(1);
 
     if (page === 1) {
-      fetchPlayers();
+      fetchPlayers('search');
     }
   }, [search, page]);
 
@@ -281,15 +281,13 @@ const Players: React.FC = () => {
   }, [players, page, addToast]);
 
   useEffect(() => {
-    fetchPositions();
-  }, []);
-
-  useEffect(() => {
-    fetchPlayers();
-  }, [filter, page]);
+    fetchPlayers('search');
+  }, [page]);
 
   useEffect(() => {
     setPage(1);
+    setSearch('');
+    fetchPlayers();
   }, [filter]);
 
   return (
