@@ -24,6 +24,13 @@ import CreateComparison from '../pages/CreateComparison';
 import Reports from '../pages/Reports';
 import CreateReport from '../pages/CreateReport';
 import EditReport from '../pages/EditReport';
+import CreateList from '../pages/CreateList';
+import Lists from '../pages/Lists';
+import EditList from '../pages/EditList';
+import ListDetails from '../pages/ListDetails';
+import Tasks from '../pages/Tasks';
+import CreateTask from '../pages/CreateTask';
+import EditTask from '../pages/EditTask';
 
 const Routes: React.FC = () => (
   <Switch>
@@ -48,6 +55,15 @@ const Routes: React.FC = () => (
     <Route path="/reports" exact component={Reports} isPrivate />
     <Route path="/reports/create" exact component={CreateReport} isPrivate />
     <Route path="/reports/edit/:id" exact component={EditReport} isPrivate />
+
+    <Route path="/lists" exact component={Lists} isPrivate />
+    <Route path="/lists/create" exact component={CreateList} isPrivate />
+    <Route path="/lists/edit/:id" exact component={EditList} isPrivate />
+    <Route path="/lists/details/:id" exact component={ListDetails} isPrivate />
+
+    <Route path="/tasks" exact component={Tasks} isPrivate />
+    <Route path="/tasks/create" exact component={CreateTask} isPrivate />
+    <Route path="/tasks/edit/:id" exact component={EditTask} isPrivate />
   </Switch>
 );
 

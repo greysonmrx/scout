@@ -202,6 +202,7 @@ const Reports: React.FC = () => {
                     <img
                       src={report.player?.avatar ? report.player.avatar : noImage}
                       alt={report.player.name}
+                      title={report.player.name}
                     />
                     {report.player.name}
                   </PlayerAvatar>

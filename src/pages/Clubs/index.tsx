@@ -128,7 +128,7 @@ const Clubs: React.FC = () => {
 
   useEffect(() => {
     fetchClubs();
-  }, [page]);
+  }, [page, filter]);
 
   return (
     <Container>

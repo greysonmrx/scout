@@ -9,6 +9,8 @@ import SideNote, { SideNoteType } from '../SideNote';
 
 import noImage from '../../assets/images/no-image.png';
 
+import handleFormatedDate from '../../utils/handleFormatedDate';
+
 import {
   Container, RecommendationField, Arrow, SideNoteContent,
 } from './styles';
@@ -51,22 +53,6 @@ const Collapse: React.FC<CollapseProps> = ({ data }) => {
 
   const [isOpened, setIsOpened] = useState(false);
   const [collapseHeight, setCollapseHeight] = useState(77);
-
-  function handleFormatedDate(timestamps: string): string {
-    const date = new Date(timestamps);
-    let day = String(date.getDate());
-    let month = String((date.getMonth() + 1));
-
-    if (Number(day) < 10) {
-      day = `0${day}`;
-    }
-
-    if (Number(month) < 10) {
-      month = `0${month}`;
-    }
-
-    return `${day}/${month}/${date.getFullYear()}`;
-  }
 
   function handleCollapseHeight(): void {
     if (isOpened && mainRef.current?.offsetHeight) {

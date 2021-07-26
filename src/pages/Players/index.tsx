@@ -30,6 +30,8 @@ import { useAuth } from '../../hooks/auth';
 
 import noImage from '../../assets/images/no-image.png';
 
+import handleSlugWord from '../../utils/handleSlugWord';
+
 import {
   Container,
   Wrapper,
@@ -40,7 +42,6 @@ import {
   ClubField,
   RecommendationField,
 } from './styles';
-import handleSlugWord from '../../utils/handleSlugWord';
 
 type Attribute = {
   name: string;
@@ -89,7 +90,10 @@ const Players: React.FC = () => {
   const [filterModalIsOpened, setFilterModalIsOpened] = useState(false);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [positions, setPositions] = useState([]);
-  const [selectedPosition, setSelectedPosition] = useState<{ value: number; label: string; } | undefined>();
+  const [
+    selectedPosition,
+    setSelectedPosition,
+  ] = useState<{ value: number; label: string; } | undefined>();
 
   const handlePlaceholderText = useCallback(() => {
     switch (filter) {
@@ -104,18 +108,20 @@ const Players: React.FC = () => {
     }
   }, [filter]);
 
-  const handleChangeAttributes = useCallback((position: number, field: string, value: string | number) => {
-    setAttributes((oldState) => oldState.map((attribute, index) => {
-      if (index === position) {
-        return {
-          ...attribute,
-          [field]: value,
-        };
-      }
+  const handleChangeAttributes = useCallback(
+    (position: number, field: string, value: string | number) => {
+      setAttributes((oldState) => oldState.map((attribute, index) => {
+        if (index === position) {
+          return {
+            ...attribute,
+            [field]: value,
+          };
+        }
 
-      return attribute;
-    }));
-  }, []);
+        return attribute;
+      }));
+    }, [],
+  );
 
   const handlePercentageColors = useCallback((percentage: number) => {
     if (percentage > 66) {
@@ -275,24 +281,16 @@ const Players: React.FC = () => {
   }, [players, page, addToast]);
 
   useEffect(() => {
-    fetchPlayers();
-  }, [page]);
-
-  useEffect(() => {
     fetchPositions();
   }, []);
 
   useEffect(() => {
-    setSearch('');
-
-    if (filter !== 'per_advanced_search') {
-      if (page === 1) {
-        fetchPlayers();
-      }
-
-      setPage(1);
-    }
+    fetchPlayers();
   }, [filter, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   return (
     <Container>

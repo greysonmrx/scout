@@ -8,15 +8,18 @@ interface RatingProps {
   value: number;
   size: number;
   margin: number;
+  stars?: number;
 }
 
-const Rating: React.FC<RatingProps> = ({ margin, size, value }) => {
+const Rating: React.FC<RatingProps> = ({
+  margin, size, value, stars = 5,
+}) => {
   const theme = useTheme();
 
   const handleRenderStar = useCallback((ratingValue: number): React.ReactNode[] => {
     const currentValue = ratingValue / 2;
 
-    return Array(5).fill('').map((_, index) => {
+    return Array(stars).fill('').map((_, index) => {
       const starProps = {
         color: theme.colors.yellow,
         size,
