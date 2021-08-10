@@ -25,16 +25,12 @@ import {
 type Task = {
   id: number;
   title: string;
+  description: string;
   status: number;
   created_at: string;
   owner: {
     id: number;
     name: string;
-  };
-  assignee: {
-    id: number;
-    name: string;
-    avatar: string;
   };
 };
 
@@ -189,7 +185,7 @@ const Tasks: React.FC = () => {
                 isActive={filter === 'per_task'}
                 onClick={() => setFilter('per_task')}
               >
-                Todos as tarefas
+                Todas as tarefas
               </Filter>
             </li>
             <li>
@@ -231,7 +227,7 @@ const Tasks: React.FC = () => {
           <thead>
             <tr>
               <th>Título</th>
-              <th>Responsável</th>
+              <th>Descrição</th>
               <th>Autor</th>
               <th>Status</th>
               <th>Ações</th>
@@ -241,16 +237,7 @@ const Tasks: React.FC = () => {
             {tasks.map((task) => (
               <tr key={task.id}>
                 <td>{task.title}</td>
-                <td>
-                  <PlayerAvatar>
-                    <img
-                      src={task.assignee.avatar || noImage}
-                      alt={task.assignee.name}
-                      title={task.assignee.name}
-                    />
-                    {task.assignee.name}
-                  </PlayerAvatar>
-                </td>
+                <td>{task.description}</td>
                 <td>{task.owner.name}</td>
                 <td>
                   <RecommendationField

@@ -103,7 +103,7 @@ const EditPosition: React.FC = () => {
       <Wrapper>
         <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
           <Top>
-            <h1>Cadastro de posições</h1>
+            <h1>Edição de posições</h1>
             <div>
               <Button type="button" onClick={handleGoBack}>Voltar</Button>
               <Button type="submit" loading={loading}>Salvar posição</Button>

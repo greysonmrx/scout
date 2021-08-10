@@ -7,7 +7,7 @@ import MenuTable from '../../components/MenuTable';
 import Radar from '../../components/Radar';
 import AttributesList from '../../components/AttributesList';
 
-import handleChartLabels from '../../utils/handleChartLabels';
+import handleChartLabels, { labels } from '../../utils/handleChartLabels';
 import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
 import handleFormattedAttributes, { AttributesTypes } from '../../utils/handleFormattedAttributes';
 import handleBirthDate from '../../utils/handleBirthDate';
@@ -21,6 +21,8 @@ import noImage from '../../assets/images/no-image.png';
 import {
   Container, Wrapper, Top, Avatar, Informations, Attributes, AttributeType,
 } from './styles';
+import Rating from 'react-rating';
+import { FaCheck, FaRegStar, FaStar, FaTimes } from 'react-icons/fa';
 
 type Player = {
   id: number;
@@ -74,7 +76,7 @@ const Comparison: React.FC = () => {
 
   const { params } = useRouteMatch() as any;
 
-  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('technical_attributes');
+  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('attribute_chart');
   const [firstPlayer, setFirstPlayer] = useState<Player | undefined>();
   const [secondPlayer, setSecondPlayer] = useState<Player | undefined>();
   const [attributesTypes, setAttributesTypes] = useState<string[]>([]);
@@ -94,7 +96,6 @@ const Comparison: React.FC = () => {
       );
 
       setAttributesTypes(attributesKeys);
-      setSelectedAttributeType(attributesKeys[0]);
 
       setFirstPlayer({
         ...firstPlayerResponse.data,
@@ -257,50 +258,130 @@ const Comparison: React.FC = () => {
           </Informations>
           <Attributes>
             <div>
-              <h1>Atributos</h1>
+              <h1>Dados Gerais</h1>
               <MenuTable>
                 <ul>
-                  {
-                  attributesTypes.map((attributeType) => (
-                    <li key={attributeType}>
-                      <AttributeType
-                        isActive={selectedAttributeType === attributeType}
-                        onClick={() => setSelectedAttributeType(attributeType)}
-                      >
-                        {handleAttributesTypesName(attributeType)}
-                      </AttributeType>
-                    </li>
-                  ))
-                }
+                  <li>
+                    <AttributeType
+                      isActive={selectedAttributeType === 'attribute_table'}
+                      onClick={() => setSelectedAttributeType('attribute_table')}
+                    >
+                      Atributos (Tabela)
+                    </AttributeType>
+                  </li>
+                  <li>
+                    <AttributeType
+                      isActive={selectedAttributeType === 'characteristics'}
+                      onClick={() => setSelectedAttributeType('characteristics')}
+                    >
+                      Características
+                    </AttributeType>
+                  </li>
+                  <li>
+                    <AttributeType
+                      isActive={selectedAttributeType === 'attribute_chart'}
+                      onClick={() => setSelectedAttributeType('attribute_chart')}
+                    >
+                      Atributos (Gráfico)
+                    </AttributeType>
+                  </li>
                 </ul>
               </MenuTable>
-              <Radar
-                data={{
-                  labels: handleChartLabels(firstPlayer.attributes[selectedAttributeType])[0],
-                  datasets: [
-                    {
-                      borderWidth: 2,
-                      data: handleChartLabels(firstPlayer.attributes[selectedAttributeType])[1],
-                      pointBackgroundColor: theme.colors.blue,
-                      backgroundColor: rgba(theme.colors.blue, 0.25),
-                      borderColor: theme.colors.blue,
-                      label: firstPlayer.name,
-                    },
-                    {
-                      borderWidth: 2,
-                      data: handleChartLabels(secondPlayer.attributes[selectedAttributeType])[1],
-                      pointBackgroundColor: theme.colors.red.enemy,
-                      backgroundColor: rgba(theme.colors.red.enemy, 0.25),
-                      borderColor: theme.colors.red.enemy,
-                      label: secondPlayer.name,
-                      minBarLength: 0,
-                    },
-                  ],
-                }}
-                legend={{
-                  display: true,
-                }}
-              />
+              {
+                selectedAttributeType === 'attribute_table' && (
+                  <Informations>
+                    <AttributesList style={{ width: 500 }}>
+                      {
+                          Object.keys(firstPlayer.attributes.technical_attributes).map(attribute => (
+                            <li key={attribute} style={{ justifyContent: 'space-between' }}>
+                              <Rating
+                                fractions={2}
+                                emptySymbol={<FaRegStar size={30} color={theme.colors.blue} />}
+                                fullSymbol={<FaStar size={30} color={theme.colors.blue} />}
+                                initialRating={firstPlayer.attributes.technical_attributes[attribute]}
+                                stop={3}
+                                readonly={true}
+                              />
+                              <strong style={{ width: 'auto', marginRight: 0 }}>{labels[attribute] || attribute}</strong>
+                              <Rating
+                                fractions={2}
+                                emptySymbol={<FaRegStar size={30} color={theme.colors.red.enemy} />}
+                                fullSymbol={<FaStar size={30} color={theme.colors.red.enemy} />}
+                                initialRating={secondPlayer.attributes.technical_attributes[attribute]}
+                                stop={3}
+                                readonly={true}
+                              />
+                            </li>
+                          ))
+                      }
+                    </AttributesList>
+                  </Informations>
+                )
+              }
+              {
+                selectedAttributeType === 'characteristics' && (
+                  <Informations>
+                    <AttributesList style={{ width: 500 }}>
+                      {
+                        Object.keys(firstPlayer.attributes.characteristics).map(attribute => (
+                          <li key={attribute} style={{ justifyContent: 'space-between' }}>
+                            {
+                              firstPlayer.attributes.characteristics[attribute] ? (
+                                <FaCheck size={30} color={theme.colors.green} />
+                              ) : (
+                                <FaTimes size={30} color={theme.colors.red.enemy} />
+                              )
+                            }
+                            <strong style={{ width: 'auto', marginRight: 0 }}>{labels[attribute] || attribute}</strong>
+                            {
+                              secondPlayer.attributes.characteristics[attribute] ? (
+                                <FaCheck size={30} color={theme.colors.green} />
+                              ) : (
+                                <FaTimes size={30} color={theme.colors.red.enemy} />
+                              )
+                            }
+                          </li>
+                        ))
+                      }
+                    </AttributesList>
+                  </Informations>
+                )
+              }
+              {
+                selectedAttributeType === 'attribute_chart' && (
+                  <div style={{ display: 'block' }}>
+                    <Radar
+                      height={600}
+                      width={600}
+                      data={{
+                        labels: handleChartLabels(firstPlayer.attributes.technical_attributes)[0],
+                        datasets: [
+                          {
+                            borderWidth: 2,
+                            data: handleChartLabels(firstPlayer.attributes.technical_attributes)[1],
+                            pointBackgroundColor: theme.colors.blue,
+                            backgroundColor: rgba(theme.colors.blue, 0.25),
+                            borderColor: theme.colors.blue,
+                            label: firstPlayer.name,
+                          },
+                          {
+                            borderWidth: 2,
+                            data: handleChartLabels(secondPlayer.attributes.technical_attributes)[1],
+                            pointBackgroundColor: theme.colors.red.enemy,
+                            backgroundColor: rgba(theme.colors.red.enemy, 0.25),
+                            borderColor: theme.colors.red.enemy,
+                            label: secondPlayer.name,
+                            minBarLength: 0,
+                          },
+                        ],
+                      }}
+                      legend={{
+                        display: true,
+                      }}
+                    />
+                  </div>
+                )
+              }
             </div>
           </Attributes>
         </>

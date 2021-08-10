@@ -20,9 +20,11 @@ import statusOptions from '../../utils/statusOptions';
 import {
   Container, Wrapper, Top, FormContainer, InputRow,
 } from './styles';
+import TextArea from '../../components/TextArea';
 
 type FormData = {
   title: string;
+  description: string;
 };
 
 const EditTask: React.FC = () => {
@@ -35,8 +37,6 @@ const EditTask: React.FC = () => {
   const [initialData, setInitialData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(0);
-  const [assignee, setAssignee] = useState<number | undefined>();
-  const [users, setUsers] = useState<{ value: number; label: string; }[]>([]);
 
   const handleSubmit = useCallback(async (data: FormData) => {
     setLoading(true);
@@ -52,29 +52,19 @@ const EditTask: React.FC = () => {
         abortEarly: false,
       });
 
-      if (typeof assignee === 'number') {
-        await api.put(`/tasks/${params.id}`, {
-          title: data.title,
-          assignee_id: assignee,
-          status,
-        });
+      await api.put(`/tasks/${params.id}`, {
+        title: data.title,
+        description: data.description,
+        status,
+      });
 
-        addToast({
-          title: 'Sucesso!',
-          type: 'success',
-          description: 'Tarefa editada com sucesso.',
-        });
+      addToast({
+        title: 'Sucesso!',
+        type: 'success',
+        description: 'Tarefa editada com sucesso.',
+      });
 
-        history.push('/tasks');
-      } else {
-        setLoading(false);
-
-        addToast({
-          title: 'Ocorreu um erro!',
-          type: 'error',
-          description: 'Preencha todo o formulário.',
-        });
-      }
+      history.push('/tasks');
     } catch (err) {
       setLoading(false);
 
@@ -90,37 +80,20 @@ const EditTask: React.FC = () => {
         });
       }
     }
-  }, [addToast, history, assignee, status]);
+  }, [addToast, history, status]);
 
   const handleGoBack = useCallback(() => {
     history.goBack();
   }, [history]);
 
-  async function fetchUsers(): Promise<void> {
-    try {
-      const usersResponse = await api.get('/users');
-
-      setUsers(usersResponse.data.map((user: any) => ({
-        value: user.id, label: user.name,
-      })));
-    } catch (err) {
-      addToast({
-        title: 'Ocorreu um erro!',
-        type: 'error',
-        description: err.response?.data.message,
-      });
-    }
-  }
-
   async function fetchTaskDetails(): Promise<void> {
     try {
       const taskResponse = await api.get(`/tasks/${params.id}`);
 
-      const { title, assignee_id } = taskResponse.data;
+      const { title, description } = taskResponse.data;
 
-      setInitialData({ title });
       setStatus(taskResponse.data.status);
-      setAssignee(assignee_id);
+      setInitialData({ title, description });
     } catch (err) {
       addToast({
         title: 'Ocorreu um erro!',
@@ -132,7 +105,6 @@ const EditTask: React.FC = () => {
 
   useEffect(() => {
     fetchTaskDetails();
-    fetchUsers();
   }, []);
 
   return (
@@ -140,37 +112,24 @@ const EditTask: React.FC = () => {
       <Wrapper>
         <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
           <Top>
-            <h1>Cadastro de tarefas</h1>
+            <h1>Edição de tarefas</h1>
             <div>
               <Button type="button" onClick={handleGoBack}>Voltar</Button>
               <Button type="submit" loading={loading}>Salvar tarefa</Button>
             </div>
           </Top>
           {
-            users.length && initialData ? (
+            initialData ? (
               <FormContainer>
                 <fieldset>
                   <legend>Dados</legend>
-                  <InputRow>
+                  <InputRow style={{ gridTemplateColumns: '1fr 1fr' }}>
                     <Input
                       name="title"
                       label="Título"
                       placeholder="Insira o título da tarefa"
                       required
                       autoFocus
-                    />
-                  </InputRow>
-                  <InputRow style={{ gridTemplateColumns: '1fr 1fr' }}>
-                    <Select
-                      name="assignee"
-                      label="Responsável"
-                      onChange={({ value }) => setAssignee(value)}
-                      placeholder="Selecione um reponsável"
-                      options={users}
-                      defaultValue={{
-                        value: assignee,
-                        label: users.find((user) => user.value === assignee)?.label || assignee,
-                      }}
                     />
                     <Select
                       name="status"
@@ -184,6 +143,14 @@ const EditTask: React.FC = () => {
                         )?.label || status,
                       }}
                       options={statusOptions}
+                    />
+                  </InputRow>
+                  <InputRow columns={1}>
+                    <TextArea
+                      name="description"
+                      label="Descrição"
+                      placeholder="Insira uma descrição da tarefa"
+                      required
                     />
                   </InputRow>
                 </fieldset>

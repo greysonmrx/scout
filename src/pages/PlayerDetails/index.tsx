@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import Rating from 'react-rating';
 import { useTheme } from 'styled-components';
 import { rgba } from 'polished';
 import { useHistory, useRouteMatch } from 'react-router-dom';
@@ -10,10 +11,11 @@ import Collapse from '../../components/Collapse';
 
 import { useToast } from '../../hooks/toast';
 
-import handleChartLabels from '../../utils/handleChartLabels';
+import handleChartLabels, { labels } from '../../utils/handleChartLabels';
 import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
 import handleFormattedAttributes, { AttributesTypes } from '../../utils/handleFormattedAttributes';
 import handleBirthDate from '../../utils/handleBirthDate';
+
 
 import api from '../../services/api';
 
@@ -32,6 +34,7 @@ import {
   AttributeType,
   Reports,
 } from './styles';
+import { FaCheck, FaRegStar, FaStar, FaTimes } from 'react-icons/fa';
 
 type Player = {
   id: number;
@@ -86,8 +89,7 @@ const PlayerDetails: React.FC = () => {
 
   const { addToast } = useToast();
 
-  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('');
-  const [attributesTypes, setAttributesTypes] = useState<string[]>([]);
+  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('attribute');
   const [player, setPlayer] = useState<Player | undefined>();
   const [attributes, setAttributes] = useState<AttributesTypes>({});
 
@@ -95,12 +97,10 @@ const PlayerDetails: React.FC = () => {
     try {
       const playerResponse = await api.get<Player>(`players/${params.id}`);
 
-      const [attributesKeys, formattedAttributes] = handleFormattedAttributes(
+      const [, formattedAttributes] = handleFormattedAttributes(
         playerResponse.data.attributes,
       );
 
-      setAttributesTypes(attributesKeys);
-      setSelectedAttributeType(attributesKeys[0]);
       setAttributes(formattedAttributes);
 
       setPlayer(playerResponse.data);
@@ -198,40 +198,60 @@ const PlayerDetails: React.FC = () => {
                 </Observations>
               </Informations>
               <Attributes>
-                <h1>Atributos</h1>
+                <h1>Dados Gerais</h1>
                 <MenuTable>
                   <ul>
-                    {
-                      attributesTypes.map((attributeType) => (
-                        <li key={attributeType}>
-                          <AttributeType
-                            isActive={selectedAttributeType === attributeType}
-                            onClick={() => setSelectedAttributeType(attributeType)}
-                          >
-                            {handleAttributesTypesName(attributeType)}
-                          </AttributeType>
-                        </li>
-                      ))
-                    }
+                    <li>
+                      <AttributeType
+                        isActive={selectedAttributeType === 'attribute'}
+                        onClick={() => setSelectedAttributeType('attribute')}
+                      >
+                        Atributos
+                      </AttributeType>
+                    </li>
+                    <li>
+                      <AttributeType
+                        isActive={selectedAttributeType === 'characteristics'}
+                        onClick={() => setSelectedAttributeType('characteristics')}
+                      >
+                        Características
+                      </AttributeType>
+                    </li>
                   </ul>
                 </MenuTable>
-                <Radar
-                  data={{
-                    labels: handleChartLabels(attributes[selectedAttributeType])[0],
-                    datasets: [
-                      {
-                        borderWidth: 2,
-                        data: handleChartLabels(attributes[selectedAttributeType])[1],
-                        pointBackgroundColor: theme.colors.blue,
-                        backgroundColor: rgba(theme.colors.blue, 0.25),
-                        borderColor: theme.colors.blue,
-                      },
-                    ],
-                  }}
-                  legend={{
-                    display: false,
-                  }}
-                />
+                <Informations>
+                  <AttributesList style={{ width: 500 }}>
+                    {
+                      selectedAttributeType === 'attribute' ?
+                        Object.keys(attributes.technical_attributes).map(attribute => (
+                          <li key={attribute} style={{ justifyContent: 'space-between' }}>
+                            <strong style={{ width: 'auto' }}>{labels[attribute] || attribute}</strong>
+                            <Rating
+                              fractions={2}
+                              emptySymbol={<FaRegStar size={30} color={theme.colors.yellow} />}
+                              fullSymbol={<FaStar size={30} color={theme.colors.yellow} />}
+                              initialRating={attributes.technical_attributes[attribute]}
+                              stop={3}
+                              readonly={true}
+                            />
+                          </li>
+                        )) : 
+                        Object.keys(attributes.characteristics).map(attribute => (
+                          <li key={attribute} style={{ justifyContent: 'space-between' }}>
+                            <strong style={{ width: 'auto' }}>{labels[attribute] || attribute}</strong>
+                            {
+                              attributes.characteristics[attribute] ? (
+                                <FaCheck size={30} color={theme.colors.green} />
+                              ) : (
+                                <FaTimes size={30} color={theme.colors.red.enemy} />
+                              )
+                            }
+                            
+                          </li>
+                        ))
+                    }
+                  </AttributesList>
+                </Informations>
               </Attributes>
               <Reports>
                 {

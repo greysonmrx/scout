@@ -233,7 +233,7 @@ const EditReport: React.FC = () => {
         {initialData ? (
           <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
             <Top>
-              <h1>Cadastro de relatórios</h1>
+              <h1>Edição de relatórios</h1>
               <div>
                 <Button type="button" onClick={handleGoBack}>Voltar</Button>
                 <Button type="submit" loading={loading}>Salvar relatório</Button>

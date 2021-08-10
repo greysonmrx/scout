@@ -149,7 +149,7 @@ const Positions: React.FC = () => {
                 isActive={filter === 'per_position'}
                 onClick={() => setFilter('per_position')}
               >
-                Todos as posições
+                Todas as posições
               </Filter>
             </li>
           </ul>

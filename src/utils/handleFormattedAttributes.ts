@@ -17,7 +17,7 @@ function handleFormattedAttributes(attributes: Attribute[]): [string[], Attribut
   attributes.forEach((attribute) => {
     attributesTypes[attribute.type] = {
       ...attributesTypes[attribute.type],
-      [attribute.name]: attribute.value,
+      [attribute.name]: attribute.value / 2,
     };
   });
 

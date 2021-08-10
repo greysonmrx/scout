@@ -2,9 +2,12 @@ import React, {
   useCallback, useEffect, useRef, useState,
 } from 'react';
 import * as Yup from 'yup';
+import Rating from 'react-rating';
 import { useHistory } from 'react-router-dom';
+import { FaStar, FaRegStar } from 'react-icons/fa';
 import { Form } from '@unform/web';
 import { Scope, FormHandles } from '@unform/core';
+import { useTheme } from 'styled-components';
 
 import Input from '../../components/Input';
 import TextArea from '../../components/TextArea';
@@ -32,6 +35,7 @@ import {
   InputRow,
   FileInputRow,
   InputsContainer,
+  RatingContainer,
 } from './styles';
 
 type FormData = {
@@ -80,6 +84,7 @@ type Position = {
 };
 
 const CreatePlayer: React.FC = () => {
+  const theme = useTheme();
   const history = useHistory();
   const formRef = useRef<FormHandles>(null);
 
@@ -91,6 +96,29 @@ const CreatePlayer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [clubs, setClubs] = useState([]);
   const [positions, setPositions] = useState([]);
+  const [stars, setStars] = useState<{ [field: string]: number }>();
+  const [characteristics, setCharacteristics] = useState({
+    close_the_goal: 0,
+    fast: 0,
+    speed_dribbler: 0,
+    opportunist: 0,
+    defend_with_the_foot: 0,
+    finisher: 0,
+    technical_dribbler: 0,
+    leadership: 0,
+    exit_at_intersections: 0,
+    shipowner: 0,
+    support_leg_actions: 0,
+    air_threat: 0,
+    careful_at_intersections: 0,
+    physically_strong: 0,
+    long_side: 0,
+    box_to_box: 0,
+    elasticity: 0,
+    ball_thief: 0,
+    set_ball_specialist: 0,
+    attack_the_lines: 0,
+  });
 
   async function fetchClubs() {
     try {
@@ -144,24 +172,38 @@ const CreatePlayer: React.FC = () => {
     }
   }
 
-  function renderInputs(fields: string[]) {
-    return fields.map((field) => (
-      <Input
-        key={field}
-        name={field}
-        label={labels[field] || field}
-        type="number"
-        max={20}
-        min={0}
-        required
-      />
-    ));
-  }
+  const renderInputs = useCallback((fields: string[]) => {
+    const parsedFields: {
+      [field: string]: number;
+    } = {};
 
-  function renderFieldsets(fields: Record<string, string[]>) {
+    fields.forEach(field => {
+      parsedFields[field] = 0;
+    });
+
+    setStars(parsedFields);
+
+    return fields.map((field) => {
+      return (
+        <RatingContainer key={field}>
+          <label htmlFor="">{labels[field] || field}</label>
+          <Rating
+            fractions={2}
+            emptySymbol={<FaRegStar size={40} color={theme.colors.yellow} />}
+            fullSymbol={<FaStar size={40} color={theme.colors.yellow} />}
+            initialRating={0}
+            stop={3}
+            onChange={console.log}
+          />
+        </RatingContainer>
+      )
+    });
+  }, []);
+
+  const renderFieldsets = useCallback((fields: Record<string, string[]>) => {
     return Object.keys(fields).map((fieldKey) => (
       <fieldset key={fieldKey}>
-        <legend>{handleAttributesTypesName(fieldKey)}</legend>
+        <legend>Atributos {handleAttributesTypesName(fieldKey)}</legend>
         <InputsContainer>
           <Scope path={fieldKey}>
             {renderInputs(fields[fieldKey])}
@@ -169,7 +211,29 @@ const CreatePlayer: React.FC = () => {
         </InputsContainer>
       </fieldset>
     ));
-  }
+  }, [renderInputs]);
+
+  useEffect(() => {
+    const parsedFields: {
+      [field: string]: number;
+    } = {};
+
+    if (position) {
+      const fields = positionAttributes[handleSlugWord(position.label)];
+      fields.technical_attributes.forEach(field => {
+        parsedFields[field] = 0;
+      });
+    }
+
+    setStars(parsedFields);
+  }, [position]);
+
+  const handleChangeStar = useCallback((star: string, value: number) => {
+    setStars(oldState => ({
+      ...oldState,
+      [star]: value
+    }));
+  }, []);
 
   const handleSubmit = useCallback(async (data: FormData) => {
     setLoading(true);
@@ -191,7 +255,7 @@ const CreatePlayer: React.FC = () => {
         abortEarly: false,
       });
 
-      const { player, ...restData } = data;
+      const { player } = data;
 
       let avatarId: number | undefined;
       let heatMapId: number | undefined;
@@ -221,21 +285,24 @@ const CreatePlayer: React.FC = () => {
           && preferredFoot
           && club
       ) {
-        const playerAttributes = restData as AttributesForm;
-
-        const attributesTypes = Object.keys(playerAttributes);
 
         const attributes: Attribute[] = [];
 
-        attributesTypes.forEach((attributesType) => {
-          const nestedAttributes = Object.keys(playerAttributes[attributesType]);
-
-          nestedAttributes.forEach((nestedAttribute) => {
+        if (stars) {
+          Object.keys(stars).forEach(star => {
             attributes.push({
-              name: nestedAttribute,
-              type: attributesType,
-              value: playerAttributes[attributesType][nestedAttribute],
+              name: star,
+              type: 'technical_attributes',
+              value: stars[star] * 2,
             });
+          });
+        }
+
+        Object.keys(characteristics).forEach((characteristic) => {
+          attributes.push({
+            name: characteristic,
+            type: 'characteristics',
+            value: characteristics[characteristic as never],
           });
         });
 
@@ -280,7 +347,7 @@ const CreatePlayer: React.FC = () => {
         });
       }
     }
-  }, [history, addToast, position, preferredFoot, club]);
+  }, [history, addToast, position, preferredFoot, club, characteristics, stars]);
 
   const handleGoBack = useCallback(() => {
     history.goBack();
@@ -380,8 +447,275 @@ const CreatePlayer: React.FC = () => {
               </InputRow>
             </fieldset>
             {
-              position && renderFieldsets(positionAttributes[handleSlugWord(position.label)])
+              position && stars &&
+              <fieldset>
+                <legend>Atributos Técnicos</legend>
+                <InputsContainer>
+                  {
+                    Object.keys(stars).map(star => (
+                      <RatingContainer key={star}>
+                        <label htmlFor="">{labels[star] || star}</label>
+                        <Rating
+                          fractions={2}
+                          emptySymbol={<FaRegStar size={40} color={theme.colors.yellow} />}
+                          fullSymbol={<FaStar size={40} color={theme.colors.yellow} />}
+                          initialRating={stars[star]}
+                          stop={3}
+                          onChange={(value) => handleChangeStar(star, value)}
+                        />
+                      </RatingContainer>
+                    ))
+                  }
+                </InputsContainer>
+              </fieldset>
             }
+            <fieldset>
+              <legend>Características</legend>
+              <InputsContainer>
+                <Scope path="characteristics">
+                  <div className="checkbox-container">
+                    <input 
+                      id="close_the_goal"
+                      name="close_the_goal" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, close_the_goal: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.close_the_goal}
+                    />
+                    <label htmlFor="close_the_goal">Fecha o gol</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="fast"
+                      name="fast" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, fast: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.fast}
+                    />
+                    <label htmlFor="fast">Rápido</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="speed_dribbler"
+                      name="speed_dribbler" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, speed_dribbler: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.speed_dribbler}
+                    />
+                    <label htmlFor="speed_dribbler">Driblador em velocidade</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="opportunist"
+                      name="opportunist" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, opportunist: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.opportunist}
+                    />
+                    <label htmlFor="opportunist">Oportunista</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="defend_with_the_foot"
+                      name="defend_with_the_foot" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, defend_with_the_foot: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.defend_with_the_foot}
+                    />
+                    <label htmlFor="defend_with_the_foot">Defender com o pé</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="finisher"
+                      name="finisher" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, finisher: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.finisher}
+                    />
+                    <label htmlFor="finisher">Finalizador</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="technical_dribbler"
+                      name="technical_dribbler" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, technical_dribbler: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.technical_dribbler}
+                    />
+                    <label htmlFor="technical_dribbler">Driblador técnico</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="leadership"
+                      name="leadership" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, leadership: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.leadership}
+                    />
+                    <label htmlFor="leadership">Liderança</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="exit_at_intersections"
+                      name="exit_at_intersections" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, exit_at_intersections: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.exit_at_intersections}
+                    />
+                    <label htmlFor="exit_at_intersections">Sai nos cruzamentos</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="shipowner"
+                      name="shipowner" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, shipowner: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.shipowner}
+                    />
+                    <label htmlFor="shipowner">Armador</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="support_leg_actions"
+                      name="support_leg_actions" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, support_leg_actions: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.support_leg_actions}
+                    />
+                    <label htmlFor="support_leg_actions">Ações com perna de apoio</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="air_threat"
+                      name="air_threat" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, air_threat: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.air_threat}
+                    />
+                    <label htmlFor="air_threat">Ameaça aérea</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="careful_at_intersections"
+                      name="careful_at_intersections" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, careful_at_intersections: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.careful_at_intersections}
+                    />
+                    <label htmlFor="careful_at_intersections">Cuidadoso nos cruzamentos</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="physically_strong"
+                      name="physically_strong" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, physically_strong: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.physically_strong}
+                    />
+                    <label htmlFor="physically_strong">Forte fisicamente</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="long_side"
+                      name="long_side" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, long_side: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.long_side}
+                    />
+                    <label htmlFor="long_side">Lateral longo</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="box_to_box"
+                      name="box_to_box" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, box_to_box: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.box_to_box}
+                    />
+                    <label htmlFor="box_to_box">Box to box</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="elasticity"
+                      name="elasticity" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, elasticity: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.elasticity}
+                    />
+                    <label htmlFor="elasticity">Elasticidade</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="ball_thief"
+                      name="ball_thief" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, ball_thief: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.ball_thief}
+                    />
+                    <label htmlFor="ball_thief">Ladrão de bola</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="set_ball_specialist"
+                      name="set_ball_specialist" 
+                      type="checkbox"
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, set_ball_specialist: event.target.checked ? 1 : 0 }
+                      ))} 
+                      checked={!!characteristics.set_ball_specialist}
+                    />
+                    <label htmlFor="set_ball_specialist">Especialista em bola parada</label>
+                  </div>
+                  <div className="checkbox-container">
+                    <input 
+                      id="attack_the_lines" 
+                      name="attack_the_lines" 
+                      type="checkbox" 
+                      onChange={(event) => setCharacteristics(oldState => (
+                        { ...oldState, attack_the_lines: event.target.checked ? 1 : 0 }
+                      ))}
+                      checked={!!characteristics.attack_the_lines} 
+                    />
+                    <label htmlFor="attack_the_lines">Ataca as linhas</label>
+                  </div>
+                </Scope>
+              </InputsContainer>
+            </fieldset>
           </FormContainer>
         </Form>
       </Wrapper>

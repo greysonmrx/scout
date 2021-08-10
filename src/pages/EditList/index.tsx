@@ -226,7 +226,7 @@ const EditList: React.FC = () => {
           initialData ? (
             <Form ref={formRef} onSubmit={handleSubmit} initialData={initialData}>
               <Top>
-                <h1>Cadastro de listas</h1>
+                <h1>Edição de listas</h1>
                 <div>
                   <Button type="button" onClick={handleGoBack}>Voltar</Button>
                   <Button type="submit" loading={loading}>Salvar lista</Button>

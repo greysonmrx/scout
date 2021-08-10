@@ -159,7 +159,7 @@ const Lists: React.FC = () => {
                 isActive={filter === 'per_list'}
                 onClick={() => setFilter('per_list')}
               >
-                Todos as listas
+                Todas as listas
               </Filter>
             </li>
             <li>

@@ -26,7 +26,6 @@ export const Container = styled.div<ContainerProps>`
 
 export const InputContainer = styled.div<InputContainerProps>`
   width: 100%;
-  height: 100%;
   border: 2px solid ${({ theme, isFocused }) => (isFocused ? theme.colors.blue : darken(0.1, theme.colors.lightGrey))};
   border-radius: 5px;
   background-color: ${({ theme, isErrored }) => (isErrored ? darken(0.1, theme.colors.white) : theme.colors.white)};

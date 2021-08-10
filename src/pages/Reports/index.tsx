@@ -175,7 +175,7 @@ const Reports: React.FC = () => {
                 isActive={filter === 'per_player'}
                 onClick={() => setFilter('per_player')}
               >
-                Todos as posições
+                Todos os relatórios
               </Filter>
             </li>
           </ul>

@@ -65,6 +65,24 @@ export const InputsContainer = styled.div`
   column-gap: 20px;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   row-gap: 25px;
+
+  div.checkbox-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    
+    input {
+      width: 18px;
+      height: 18px;
+      margin-right: 5px;
+    }
+
+    label {
+      color: #737f91;
+      font-weight: 600;
+      font-size: 15px;
+    }
+  }
 `;
 
 export const InputRow = styled.div<InputRowProps>`
@@ -82,4 +100,18 @@ export const FileInputRow = styled.div`
   align-items: center;
   justify-content: space-around;
   margin-bottom: 30px;
+`;
+
+export const RatingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  label {
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.grey};
+  }
+
+  > span {
+    padding-top: 15px;
+  }
 `;
