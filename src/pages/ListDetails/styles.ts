@@ -40,6 +40,7 @@ export const Wrapper = styled.div`
       align-items: center;
       justify-content: space-between;
       padding: 20px 0;
+      height: 100%;
 
       div.avatar {
         display: flex;
@@ -59,6 +60,10 @@ export const Wrapper = styled.div`
           &:hover {
             text-decoration: underline;
           }
+        }
+
+        strong {
+          font-size: 20px;
         }
       }
 

@@ -121,7 +121,7 @@ export const Informations = styled.div`
         ul {
           li {
             strong {
-              color: ${({ theme }) => theme.colors.blue};
+              color: ${({ theme }) => theme.colors.green};
             }
 
             span {

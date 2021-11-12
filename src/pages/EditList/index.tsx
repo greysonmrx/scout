@@ -142,7 +142,7 @@ const EditList: React.FC = () => {
         return typeof capacity === 'number' && typeof potential === 'number' && typeof player_id === 'number';
       });
 
-      if (typeof player === 'number' && allFine) {
+      if (allFine) {
         await api.put(`/lists/${params.id}`, {
           name: data.name,
           player_id: player,

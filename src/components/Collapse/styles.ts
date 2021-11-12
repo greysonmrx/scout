@@ -116,10 +116,10 @@ export const Container = styled.div<ContainerProps>`
         }
 
         &.pros {
-          border-top: 5px solid ${({ theme }) => theme.colors.blue};
+          border-top: 5px solid ${({ theme }) => theme.colors.green};
 
           h5 {
-            color: ${({ theme }) => theme.colors.blue};
+            color: ${({ theme }) => theme.colors.green};
           }
         }
 

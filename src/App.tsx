@@ -31,7 +31,7 @@ export const App: React.FC = () => {
     <HashRouter>
       <ThemeProvider theme={defaultTheme}>
         <Helmet>
-          <title>Scout</title>
+          <title>CIM Scout</title>
           <link rel="preconnect" href="https://fonts.gstatic.com" />
           <link
             href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&display=swap"

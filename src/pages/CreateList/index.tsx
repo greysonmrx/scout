@@ -120,7 +120,7 @@ const CreateList: React.FC = () => {
         return typeof capacity === 'number' && typeof potential === 'number' && typeof player_id === 'number';
       });
 
-      if (typeof player === 'number' && allFine) {
+      if (allFine) {
         await api.post('/lists', {
           name: data.name,
           player_id: player,

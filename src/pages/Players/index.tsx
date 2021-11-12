@@ -287,7 +287,11 @@ const Players: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchPlayers('search');
+    if (filter === 'per_advanced_search') {
+      handleAdvancedSearch();
+    } else {
+      fetchPlayers('search'); 
+    }
   }, [page]);
 
   useEffect(() => {

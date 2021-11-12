@@ -13,9 +13,10 @@ import { useToast } from '../../hooks/toast';
 
 import handleChartLabels, { labels } from '../../utils/handleChartLabels';
 import handleAttributesTypesName from '../../utils/handleAttributesTypesName';
-import handleFormattedAttributes, { AttributesTypes } from '../../utils/handleFormattedAttributes';
+import handleFormattedAttributes, {
+  AttributesTypes,
+} from '../../utils/handleFormattedAttributes';
 import handleBirthDate from '../../utils/handleBirthDate';
-
 
 import api from '../../services/api';
 
@@ -48,6 +49,7 @@ type Player = {
   note: string;
   club_id: number;
   position_id: number;
+  link?: string;
   club: {
     name: string;
     shield?: string;
@@ -89,7 +91,8 @@ const PlayerDetails: React.FC = () => {
 
   const { addToast } = useToast();
 
-  const [selectedAttributeType, setSelectedAttributeType] = useState<string>('attribute');
+  const [selectedAttributeType, setSelectedAttributeType] =
+    useState<string>('attribute');
   const [player, setPlayer] = useState<Player | undefined>();
   const [attributes, setAttributes] = useState<AttributesTypes>({});
 
@@ -128,149 +131,160 @@ const PlayerDetails: React.FC = () => {
           <h1>Informações do jogador</h1>
           <Button onClick={handleGoBack}>Voltar</Button>
         </Top>
-        {
-          !player ? (
-            <p>Carregando</p>
-          ) : (
-            <>
-              <Informations>
-                <TopInformations>
-                  <div>
-                    <Avatar>
-                      {
-                        player.club.shield && (
-                          <img
-                            src={player.club.shield}
-                            alt={player.club.name}
-                            className="club-shield"
-                          />
-                        )
-                      }
+        {!player ? (
+          <p>Carregando</p>
+        ) : (
+          <>
+            <Informations>
+              <TopInformations>
+                <div>
+                  <Avatar>
+                    {player.club.shield && (
                       <img
-                        src={player.avatar ? player.avatar : noImage}
-                        alt={player.name}
-                        className="player-avatar"
+                        src={player.club.shield}
+                        alt={player.club.name}
+                        className="club-shield"
                       />
-                    </Avatar>
-                    <div>
-                      <h3>{player.name}</h3>
-                      <h5>{player.club.name}</h5>
-                      <AttributesList>
-                        <li>
-                          <strong>Idade</strong>
-                          <span>{handleBirthDate(player.birth_date)}</span>
-                        </li>
-                        <li>
-                          <strong>Posição</strong>
-                          <span>{player.position}</span>
-                        </li>
-                        <li>
-                          <strong>Pé preferido</strong>
-                          <span>{player.preferred_footer}</span>
-                        </li>
-                        <li>
-                          <strong>Altura</strong>
-                          <span>
-                            {player.height}
-                            {' '}
-                            cm
-                          </span>
-                        </li>
-                        <li>
-                          <strong>Peso</strong>
-                          <span>
-                            {player.weight}
-                            {' '}
-                            kg
-                          </span>
-                        </li>
-                      </AttributesList>
-                    </div>
-                  </div>
+                    )}
+                    <img
+                      src={player.avatar ? player.avatar : noImage}
+                      alt={player.name}
+                      className="player-avatar"
+                    />
+                  </Avatar>
                   <div>
-                    <h3>Mapa de calor</h3>
-                    <img src={player.heat_map ? player.heat_map : noImage} alt="Mapa de calor" />
+                    <h3>{player.name}</h3>
+                    <h5>{player.club.name}</h5>
+                    <AttributesList>
+                      <li>
+                        <strong>Idade</strong>
+                        <span>{handleBirthDate(player.birth_date)}</span>
+                      </li>
+                      <li>
+                        <strong>Posição</strong>
+                        <span>{player.position}</span>
+                      </li>
+                      <li>
+                        <strong>Pé preferido</strong>
+                        <span>{player.preferred_footer}</span>
+                      </li>
+                      <li>
+                        <strong>Altura</strong>
+                        <span>{player.height} cm</span>
+                      </li>
+                      <li>
+                        <strong>Peso</strong>
+                        <span>{player.weight} kg</span>
+                      </li>
+                    </AttributesList>
                   </div>
-                </TopInformations>
-                <Observations>
-                  <h3>Observações</h3>
-                  <p>{player.note}</p>
+                </div>
+                <div>
+                  <h3>Mapa de calor</h3>
+                  <img
+                    src={player.heat_map ? player.heat_map : noImage}
+                    alt="Mapa de calor"
+                  />
+                </div>
+              </TopInformations>
+              {player.link && (
+                <Observations style={{ marginBottom: 20 }}>
+                  <h3>Link</h3>
+                  <p>{player.link}</p>
                 </Observations>
-              </Informations>
-              <Attributes>
-                <h1>Dados Gerais</h1>
-                <MenuTable>
-                  <ul>
-                    <li>
-                      <AttributeType
-                        isActive={selectedAttributeType === 'attribute'}
-                        onClick={() => setSelectedAttributeType('attribute')}
-                      >
-                        Atributos
-                      </AttributeType>
-                    </li>
-                    <li>
-                      <AttributeType
-                        isActive={selectedAttributeType === 'characteristics'}
-                        onClick={() => setSelectedAttributeType('characteristics')}
-                      >
-                        Características
-                      </AttributeType>
-                    </li>
-                  </ul>
-                </MenuTable>
-                <Informations>
-                  <AttributesList style={{ width: 500 }}>
-                    {
-                      selectedAttributeType === 'attribute' ?
-                        Object.keys(attributes.technical_attributes).map(attribute => (
-                          <li key={attribute} style={{ justifyContent: 'space-between' }}>
-                            <strong style={{ width: 'auto' }}>{labels[attribute] || attribute}</strong>
+              )}
+              <Observations>
+                <h3>Informações</h3>
+                <p>{player.note}</p>
+              </Observations>
+            </Informations>
+            <Attributes>
+              <h1>Dados Gerais</h1>
+              <MenuTable>
+                <ul>
+                  <li>
+                    <AttributeType
+                      isActive={selectedAttributeType === 'attribute'}
+                      onClick={() => setSelectedAttributeType('attribute')}
+                    >
+                      Atributos
+                    </AttributeType>
+                  </li>
+                  <li>
+                    <AttributeType
+                      isActive={selectedAttributeType === 'characteristics'}
+                      onClick={() =>
+                        setSelectedAttributeType('characteristics')
+                      }
+                    >
+                      Características
+                    </AttributeType>
+                  </li>
+                </ul>
+              </MenuTable>
+              <Informations>
+                <AttributesList style={{ width: 500 }}>
+                  {selectedAttributeType === 'attribute'
+                    ? Object.keys(attributes.technical_attributes).map(
+                        (attribute) => (
+                          <li
+                            key={attribute}
+                            style={{ justifyContent: 'space-between' }}
+                          >
+                            <strong style={{ width: 'auto' }}>
+                              {labels[attribute] || attribute}
+                            </strong>
                             <Rating
                               fractions={2}
-                              emptySymbol={<FaRegStar size={30} color={theme.colors.yellow} />}
-                              fullSymbol={<FaStar size={30} color={theme.colors.yellow} />}
-                              initialRating={attributes.technical_attributes[attribute]}
+                              emptySymbol={
+                                <FaRegStar
+                                  size={30}
+                                  color={theme.colors.yellow}
+                                />
+                              }
+                              fullSymbol={
+                                <FaStar size={30} color={theme.colors.yellow} />
+                              }
+                              initialRating={
+                                attributes.technical_attributes[attribute]
+                              }
                               stop={3}
                               readonly={true}
                             />
                           </li>
-                        )) : 
-                        Object.keys(attributes.characteristics).map(attribute => (
-                          <li key={attribute} style={{ justifyContent: 'space-between' }}>
-                            <strong style={{ width: 'auto' }}>{labels[attribute] || attribute}</strong>
-                            {
-                              attributes.characteristics[attribute] ? (
-                                <FaCheck size={30} color={theme.colors.green} />
-                              ) : (
-                                <FaTimes size={30} color={theme.colors.red.enemy} />
-                              )
-                            }
-                            
+                        ),
+                      )
+                    : Object.keys(attributes.characteristics).map(
+                        (attribute) => (
+                          <li
+                            key={attribute}
+                            style={{ justifyContent: 'space-between' }}
+                          >
+                            <strong style={{ width: 'auto' }}>
+                              {labels[attribute] || attribute}
+                            </strong>
+                            {attributes.characteristics[attribute] ? (
+                              <FaCheck size={30} color={theme.colors.green} />
+                            ) : (
+                              <FaTimes
+                                size={30}
+                                color={theme.colors.red.enemy}
+                              />
+                            )}
                           </li>
-                        ))
-                    }
-                  </AttributesList>
-                </Informations>
-              </Attributes>
-              <Reports>
-                {
-                  player.reports.length > 0 && (
-                    <h1>Relatórios</h1>
-                  )
-                }
-                {
-                  player.reports.map((report) => (
-                    <Collapse
-                      key={report.id}
-                      data={report}
-                    />
-                  ))
-                }
-              </Reports>
-            </>
-          )
-        }
+                        ),
+                      )}
+                </AttributesList>
+              </Informations>
+            </Attributes>
+            <Reports>
+              {player.reports.length > 0 && <h1>Relatórios</h1>}
+              {player.reports.map((report) => (
+                <Collapse key={report.id} data={report} />
+              ))}
+            </Reports>
+          </>
+        )}
       </Wrapper>
     </Container>
   );

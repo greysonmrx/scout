@@ -102,7 +102,7 @@ export default {
       'defensive_action',
     ],
   },
-  [handleSlugWord('Centrovante')]: {
+  [handleSlugWord('Centroavante')]: {
     technical_attributes: [
       'finishing',
       'heading',

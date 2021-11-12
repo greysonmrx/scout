@@ -52,3 +52,74 @@ export const Filter = styled.button<FilterProps>`
     return null;
   }};
 `;
+
+export const Modal = styled.div`
+  display: flex;
+  position: absolute;
+  top: 0;
+  height: 100%;
+  z-index: 20;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+
+  > div {
+    width: 100%;
+    max-width: 500px;
+    padding: 30px;
+    background: ${({ theme }) => theme.colors.white};
+    border-radius: 10px;
+    overflow-y: auto;
+    max-height: 90vh;
+
+    > header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding-bottom: 30px;
+
+      h3 {
+        color: ${({ theme }) => theme.colors.black};
+      }
+
+      button {
+        cursor: pointer;
+        position: absolute;
+        right: 0;
+        border: none;
+        background: none;
+      }
+    }
+
+    main {
+      div {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        
+        img {
+          width: 50px;
+          height: 50px;
+          margin-right: 10px;
+        }
+
+        a {
+          font-size: 16px;
+          color: ${({ theme }) => theme.colors.black};
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        & + div {
+          border-top: 1px solid ${({ theme }) => theme.colors.lightGrey};
+        }
+      }
+    }
+  }
+`;

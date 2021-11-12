@@ -121,6 +121,8 @@ export const Modal = styled.div`
     padding: 30px;
     background: ${({ theme }) => theme.colors.white};
     border-radius: 10px;
+    overflow-y: auto;
+    max-height: 90vh;
 
     > header {
       display: flex;

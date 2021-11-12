@@ -296,8 +296,8 @@ const Comparison: React.FC = () => {
                             <li key={attribute} style={{ justifyContent: 'space-between' }}>
                               <Rating
                                 fractions={2}
-                                emptySymbol={<FaRegStar size={30} color={theme.colors.blue} />}
-                                fullSymbol={<FaStar size={30} color={theme.colors.blue} />}
+                                emptySymbol={<FaRegStar size={30} color={theme.colors.green} />}
+                                fullSymbol={<FaStar size={30} color={theme.colors.green} />}
                                 initialRating={firstPlayer.attributes.technical_attributes[attribute]}
                                 stop={3}
                                 readonly={true}
@@ -350,6 +350,7 @@ const Comparison: React.FC = () => {
               {
                 selectedAttributeType === 'attribute_chart' && (
                   <div style={{ display: 'block' }}>
+                    {console.log(handleChartLabels(firstPlayer.attributes.technical_attributes)[1].map(data => data * 2))}
                     <Radar
                       height={600}
                       width={600}
@@ -358,15 +359,15 @@ const Comparison: React.FC = () => {
                         datasets: [
                           {
                             borderWidth: 2,
-                            data: handleChartLabels(firstPlayer.attributes.technical_attributes)[1],
-                            pointBackgroundColor: theme.colors.blue,
-                            backgroundColor: rgba(theme.colors.blue, 0.25),
-                            borderColor: theme.colors.blue,
+                            data: handleChartLabels(firstPlayer.attributes.technical_attributes)[1].map(data => data * 2),
+                            pointBackgroundColor: theme.colors.green,
+                            backgroundColor: rgba(theme.colors.green, 0.25),
+                            borderColor: theme.colors.green,
                             label: firstPlayer.name,
                           },
                           {
                             borderWidth: 2,
-                            data: handleChartLabels(secondPlayer.attributes.technical_attributes)[1],
+                            data: handleChartLabels(secondPlayer.attributes.technical_attributes)[1].map(data => data * 2),
                             pointBackgroundColor: theme.colors.red.enemy,
                             backgroundColor: rgba(theme.colors.red.enemy, 0.25),
                             borderColor: theme.colors.red.enemy,
@@ -374,6 +375,7 @@ const Comparison: React.FC = () => {
                             minBarLength: 0,
                           },
                         ],
+                        
                       }}
                       legend={{
                         display: true,

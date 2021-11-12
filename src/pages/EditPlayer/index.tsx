@@ -465,10 +465,18 @@ const EditPlayer: React.FC = () => {
                     />
                   </InputRow>
                   <InputRow columns={1}>
+                    <Input
+                      name="player.link"
+                      label="Link"
+                      type="text"
+                      placeholder="Link vídeo do YouTube"
+                    />
+                  </InputRow>
+                  <InputRow columns={1}>
                     <TextArea
                       name="player.note"
-                      label="Observações sobre o jogador"
-                      placeholder="Insira as observações sobre o jogador"
+                      label="Informações sobre o jogador"
+                      placeholder="Insira as informações do jogador"
                       required
                     />
                   </InputRow>

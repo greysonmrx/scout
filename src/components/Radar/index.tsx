@@ -11,9 +11,9 @@ const Radar: React.FC<ChartComponentProps> = ({ ...props }) => {
         scale: {
           ticks: {
             display: false,
-            max: 3,
+            max: 6,
             min: 0,
-            stepSize: 0.5
+            stepSize: 1
           },
           gridLines: {
             lineWidth: 2,

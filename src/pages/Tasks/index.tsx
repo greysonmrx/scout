@@ -80,7 +80,7 @@ const Tasks: React.FC = () => {
     }
 
     if (status === 1) {
-      return theme.colors.blue;
+      return theme.colors.medium;
     }
 
     return theme.colors.red.error;
