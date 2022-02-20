@@ -3,17 +3,17 @@ import React, { useContext, createContext, useState } from 'react';
 type Attribute = {
   name: string;
   type: string;
-  value: number;
-  operator: string;
+  minValue: number;
+  maxValue: number;
 }
 
 interface IAdvancedSearchContext {
   attributes: Attribute[];
   position: { value: number; label: string; };
-  startDate?: number;
-  endDate?: number;
-  recommendation?: number;
-  setAttributes: (value: Attribute[]) => void;
+  startDate: number;
+  endDate: number;
+  recommendation: number;
+  setAttributes: (value: React.SetStateAction<Attribute[]>) => void;
   setPosition: (value: { value: number; label: string; }) => void;
   setStartDate: (value: number) => void;
   setEndDate: (value: number) => void;
@@ -28,9 +28,9 @@ const AdvancedSearchProvider: React.FC = ({ children }) => {
     label: 'Selecione uma posição',
     value: 0,
   });
-  const [startDate, setStartDate] = useState<number | undefined>();
-  const [endDate, setEndDate] = useState<number | undefined>();
-  const [recommendation, setRecommendation] = useState<number | undefined>();
+  const [startDate, setStartDate] = useState<number>(18);
+  const [endDate, setEndDate] = useState<number>(25);
+  const [recommendation, setRecommendation] = useState<number>(50);
 
   return (
     <AdvancedSearchContext.Provider

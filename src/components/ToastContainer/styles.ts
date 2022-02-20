@@ -1,7 +1,11 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export const Container = styled.div`
-  display: flex;
+type ContainerProps = {
+  hasMessages: boolean;
+}
+
+export const Container = styled.div<ContainerProps>`
+  display: none;
   flex-direction: column;
   position: fixed;
   right: 0;
@@ -10,4 +14,7 @@ export const Container = styled.div`
   overflow: hidden;
   align-items: flex-end;
   z-index: 99999999;
+  ${({ hasMessages }) => hasMessages && css`
+    display: flex;
+  `}
 `;

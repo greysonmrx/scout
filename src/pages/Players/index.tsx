@@ -1,6 +1,4 @@
-import React, {
-  useCallback, useEffect, useRef, useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
 import { useTheme } from 'styled-components';
@@ -16,6 +14,7 @@ import Actions from '../../components/Actions';
 import Pagination from '../../components/Pagination';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
+import Drawer from '../../components/Drawer';
 
 import handleBirthDate from '../../utils/handleBirthDate';
 import hasPermission from '../../utils/hasPermission';
@@ -43,13 +42,6 @@ import {
   RecommendationField,
 } from './styles';
 import { useAdvancedSearch } from '../../hooks/advancedSearch';
-
-type Attribute = {
-  name: string;
-  type: string;
-  value: number;
-  operator: string;
-}
 
 type Player = {
   id: number;
@@ -116,19 +108,22 @@ const Players: React.FC = () => {
     }
   }, [filter]);
 
-  const handleChangeAttributes = useCallback(
-    (position_id: number, field: string, value: string | number) => {
-      setAttributes(attributes.map((attribute, index) => {
-        if (index === position_id) {
-          return {
-            ...attribute,
-            [field]: value,
-          };
-        }
+  const handleChangeAttribute = useCallback(
+    (attributeId: number, field: string, value: string | number) => {
+      setAttributes((oldState) =>
+        oldState.map((attribute, index) => {
+          if (index === attributeId) {
+            return {
+              ...attribute,
+              [field]: value,
+            };
+          }
 
-        return attribute;
-      }));
-    }, [attributes],
+          return attribute;
+        }),
+      );
+    },
+    [],
   );
 
   const handlePercentageColors = useCallback((percentage: number) => {
@@ -143,13 +138,19 @@ const Players: React.FC = () => {
     return theme.colors.red.error;
   }, []);
 
-  const handleGoToPage = useCallback((path: string, params?: Record<string, unknown>) => {
-    history.push(path, params);
-  }, [history]);
+  const handleGoToPage = useCallback(
+    (path: string, params?: Record<string, unknown>) => {
+      history.push(path, params);
+    },
+    [history],
+  );
 
-  const handleViewPlayerDetails = useCallback((player_id: number) => {
-    handleGoToPage(`/players/details/${player_id}`);
-  }, [handleGoToPage]);
+  const handleViewPlayerDetails = useCallback(
+    (player_id: number) => {
+      handleGoToPage(`/players/details/${player_id}`);
+    },
+    [handleGoToPage],
+  );
 
   const handleAdvancedSearch = useCallback(async () => {
     setFilterModalIsOpened(false);
@@ -163,14 +164,20 @@ const Players: React.FC = () => {
           page,
           limit,
           position_id: position?.value || undefined,
-          start_date: startDate ? `${currentDate.getFullYear() - startDate}-01-01` : undefined,
-          end_date: endDate ? `${currentDate.getFullYear() - endDate}-01-01` : undefined,
+          start_date: startDate
+            ? `${currentDate.getFullYear() - startDate}-01-01`
+            : undefined,
+          end_date: endDate
+            ? `${currentDate.getFullYear() - endDate}-01-01`
+            : undefined,
           recommendation_percentage: recommendation || 0,
-          attributes: attributes.length > 0 ? JSON.stringify(attributes) : undefined,
+          attributes:
+            attributes.length > 0 ? JSON.stringify(attributes) : undefined,
         },
       });
 
-      const { players: fetchedPlayers, ...paginationData } = playersResponse.data;
+      const { players: fetchedPlayers, ...paginationData } =
+        playersResponse.data;
 
       setPlayers(fetchedPlayers);
       setPagination(paginationData);
@@ -184,20 +191,22 @@ const Players: React.FC = () => {
   }, [attributes, position, limit, page, startDate, endDate, recommendation]);
 
   const handleAddAttribute = useCallback(() => {
-    setAttributes([
-      ...attributes,
+    setAttributes((oldState) => [
+      ...oldState,
       {
         name: '',
-        operator: '=',
         type: '',
-        value: 0,
+        minValue: 2,
+        maxValue: 4,
       },
     ]);
-  }, [attributes]);
+  }, []);
 
-  const handleRemoveAttribute = useCallback((position_id: number) => {
-    setAttributes(attributes.filter((_, index) => index !== position_id));
-  }, [attributes]);
+  const handleRemoveAttribute = useCallback((attributeId: number) => {
+    setAttributes((oldState) =>
+      oldState.filter((_, index) => index !== attributeId),
+    );
+  }, []);
 
   async function fetchPositions() {
     try {
@@ -208,10 +217,12 @@ const Players: React.FC = () => {
         },
       });
 
-      setPositions(response.data.positions.map((fetchedPosition: any) => ({
-        value: fetchedPosition.id,
-        label: fetchedPosition.name,
-      })));
+      setPositions(
+        response.data.positions.map((fetchedPosition: any) => ({
+          value: fetchedPosition.id,
+          label: fetchedPosition.name,
+        })),
+      );
     } catch (err) {
       addToast({
         title: 'Erro ao obter posições!',
@@ -232,7 +243,8 @@ const Players: React.FC = () => {
         },
       });
 
-      const { players: fetchedPlayers, ...paginationData } = playersResponse.data;
+      const { players: fetchedPlayers, ...paginationData } =
+        playersResponse.data;
 
       setPlayers(fetchedPlayers);
       setPagination(paginationData);
@@ -253,34 +265,39 @@ const Players: React.FC = () => {
     }
   }, [search, page]);
 
-  const handleDeletePlayer = useCallback(async (id: number) => {
-    try {
-      await api.delete(`/players/${id}`);
+  const handleDeletePlayer = useCallback(
+    async (id: number) => {
+      try {
+        await api.delete(`/players/${id}`);
 
-      addToast({
-        title: 'Sucesso!',
-        type: 'success',
-        description: 'Jogador excluído com sucesso.',
-      });
+        addToast({
+          title: 'Sucesso!',
+          type: 'success',
+          description: 'Jogador excluído com sucesso.',
+        });
 
-      if (players.length - 1 === 0 && page !== 1) {
-        setPage((oldPage) => oldPage - 1);
-      } else {
-        setPlayers((oldPlayers) => [...oldPlayers.filter((player) => player.id !== id)]);
-        setPagination((oldPagination) => ({
-          ...oldPagination,
-          page_count: oldPagination.page_count - 1,
-          total_items: oldPagination.total_items - 1,
-        }));
+        if (players.length - 1 === 0 && page !== 1) {
+          setPage((oldPage) => oldPage - 1);
+        } else {
+          setPlayers((oldPlayers) => [
+            ...oldPlayers.filter((player) => player.id !== id),
+          ]);
+          setPagination((oldPagination) => ({
+            ...oldPagination,
+            page_count: oldPagination.page_count - 1,
+            total_items: oldPagination.total_items - 1,
+          }));
+        }
+      } catch (err) {
+        addToast({
+          title: 'Erro ao excluir o jogador!',
+          type: 'error',
+          description: err.response?.data.message,
+        });
       }
-    } catch (err) {
-      addToast({
-        title: 'Erro ao excluir o jogador!',
-        type: 'error',
-        description: err.response?.data.message,
-      });
-    }
-  }, [players, page, addToast]);
+    },
+    [players, page, addToast],
+  );
 
   useEffect(() => {
     fetchPositions();
@@ -290,7 +307,7 @@ const Players: React.FC = () => {
     if (filter === 'per_advanced_search') {
       handleAdvancedSearch();
     } else {
-      fetchPlayers('search'); 
+      fetchPlayers('search');
     }
   }, [page]);
 
@@ -337,28 +354,26 @@ const Players: React.FC = () => {
             </li>
           </ul>
           <div>
-            {
-              filter === 'per_advanced_search' ? (
-                <Button type="button" onClick={() => setFilterModalIsOpened(true)}>
-                  <FaFilter
-                    size={14}
-                    color={theme.colors.white}
-                  />
-                  Filtros
-                </Button>
-              ) : (
-                <>
-                  <input
-                    placeholder={handlePlaceholderText()}
-                    type="search"
-                    value={search}
-                    onChange={({ target }) => setSearch(target.value)}
-                    onKeyUp={(event) => event.key === 'Enter' && searchPlayers()}
-                  />
-                  <FiSearch />
-                </>
-              )
-            }
+            {filter === 'per_advanced_search' ? (
+              <Button
+                type="button"
+                onClick={() => setFilterModalIsOpened(true)}
+              >
+                <FaFilter size={14} color={theme.colors.white} />
+                Filtros
+              </Button>
+            ) : (
+              <>
+                <input
+                  placeholder={handlePlaceholderText()}
+                  type="search"
+                  value={search}
+                  onChange={({ target }) => setSearch(target.value)}
+                  onKeyUp={(event) => event.key === 'Enter' && searchPlayers()}
+                />
+                <FiSearch />
+              </>
+            )}
           </div>
         </MenuTable>
         <Table>
@@ -411,37 +426,34 @@ const Players: React.FC = () => {
                     >
                       Visualizar
                     </button>
-                    {
-                      hasPermission(user.id, user.role, player.owner.id) && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleGoToPage(`/players/edit/${player.id}`)}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="danger"
-                            onClick={() => handleDeletePlayer(player.id)}
-                          >
-                            Excluir
-                          </button>
-                        </>
-                      )
-                    }
+                    {hasPermission(user.id, user.role, player.owner.id) && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleGoToPage(`/players/edit/${player.id}`)
+                          }
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => handleDeletePlayer(player.id)}
+                        >
+                          Excluir
+                        </button>
+                      </>
+                    )}
                   </Actions>
                 </td>
               </tr>
             ))}
           </tbody>
         </Table>
-        <Pagination
-          data={pagination}
-          callback={setPage}
-        />
+        <Pagination data={pagination} callback={setPage} />
       </Wrapper>
-      {filterModalIsOpened && (
+      {/* {filterModalIsOpened && (
       <Modal>
         <div>
           <header>
@@ -596,7 +608,30 @@ const Players: React.FC = () => {
           </main>
         </div>
       </Modal>
-      )}
+      )} */}
+      <Drawer
+        visible={filterModalIsOpened}
+        startDate={startDate}
+        endDate={endDate}
+        position={position}
+        recommendation={recommendation}
+        positionList={positions}
+        attributeList={attributes}
+        handleAddAttribute={handleAddAttribute}
+        handleAgeChange={(startDateValue: number, endDateValue: number) => {
+          setStartDate(startDateValue);
+          setEndDate(endDateValue);
+        }}
+        handleChangeAttribute={handleChangeAttribute}
+        handlePositionChange={setPosition}
+        handleRecommendationChange={setRecommendation}
+        handleRemoveAttribute={handleRemoveAttribute}
+        onClear={() => console.log('Clear all')}
+        onSubmit={() => {
+          setPage(1);
+          handleAdvancedSearch();
+        }}
+      />
     </Container>
   );
 };

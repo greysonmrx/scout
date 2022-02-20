@@ -190,7 +190,7 @@ const PlayerDetails: React.FC = () => {
               {player.link && (
                 <Observations style={{ marginBottom: 20 }}>
                   <h3>Link</h3>
-                  <p>{player.link}</p>
+                  <a href={player.link} target="_blank">{player.link}</a>
                 </Observations>
               )}
               <Observations>
