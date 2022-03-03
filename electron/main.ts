@@ -12,7 +12,7 @@ const assetsPath =
 
 function createWindow() {
   const icon = nativeImage.createFromPath(
-    `${app.getAppPath()}/build/icon.jpeg`,
+    `${assetsPath}/build/icon.jpeg`,
   );
 
   mainWindow = new BrowserWindow({

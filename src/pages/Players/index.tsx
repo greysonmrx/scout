@@ -152,9 +152,18 @@ const Players: React.FC = () => {
     [handleGoToPage],
   );
 
-  const handleAdvancedSearch = useCallback(async () => {
-    setFilterModalIsOpened(false);
+  const handleClearAllFilters = useCallback(() => {
+    setPosition({
+      label: 'Selecione uma posição',
+      value: 0,
+    });
+    setAttributes([]);
+    setEndDate(25);
+    setStartDate(18);
+    setRecommendation(50);
+  }, [setPosition, setAttributes, setEndDate, setStartDate, setRecommendation]);
 
+  const handleAdvancedSearch = useCallback(async () => {
     try {
       const currentDate = new Date();
 
@@ -172,7 +181,10 @@ const Players: React.FC = () => {
             : undefined,
           recommendation_percentage: recommendation || 0,
           attributes:
-            attributes.length > 0 ? JSON.stringify(attributes) : undefined,
+            attributes.length > 0 ? JSON.stringify(attributes.map(attribute => ({
+              ...attribute,
+              value: attribute.value * 2
+            }))) : undefined,
         },
       });
 
@@ -187,6 +199,8 @@ const Players: React.FC = () => {
         type: 'error',
         description: err.response?.data.message,
       });
+    } finally {
+      setFilterModalIsOpened(false);
     }
   }, [attributes, position, limit, page, startDate, endDate, recommendation]);
 
@@ -196,8 +210,8 @@ const Players: React.FC = () => {
       {
         name: '',
         type: '',
-        minValue: 2,
-        maxValue: 4,
+        value: 0,
+        operator: '>',
       },
     ]);
   }, []);
@@ -318,7 +332,7 @@ const Players: React.FC = () => {
   }, [filter]);
 
   return (
-    <Container>
+    <Container style={{ overflowY: filterModalIsOpened ? 'hidden' : 'auto' }}>
       <Wrapper>
         <Top>
           <h1>Gerenciando jogadores</h1>
@@ -626,7 +640,8 @@ const Players: React.FC = () => {
         handlePositionChange={setPosition}
         handleRecommendationChange={setRecommendation}
         handleRemoveAttribute={handleRemoveAttribute}
-        onClear={() => console.log('Clear all')}
+        onClear={handleClearAllFilters}
+        onClose={() => setFilterModalIsOpened(false)}
         onSubmit={() => {
           setPage(1);
           handleAdvancedSearch();

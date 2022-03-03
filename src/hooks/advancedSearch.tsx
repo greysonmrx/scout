@@ -3,8 +3,8 @@ import React, { useContext, createContext, useState } from 'react';
 type Attribute = {
   name: string;
   type: string;
-  minValue: number;
-  maxValue: number;
+  value: number;
+  operator: string;
 }
 
 interface IAdvancedSearchContext {

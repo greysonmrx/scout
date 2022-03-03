@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Rating from 'react-rating';
 
+import { FaRegStar, FaStar } from 'react-icons/fa';
 import { RiCloseLine } from 'react-icons/ri';
 import { useTheme } from 'styled-components';
 import { IconButton } from '@mui/material';
@@ -40,8 +42,8 @@ type DrawerProps = {
   attributeList: Array<{
     name: string;
     type: string;
-    minValue: number;
-    maxValue: number;
+    value: number;
+    operator: string;
   }>;
   handleAddAttribute(): void;
   handleAgeChange(startDate: number, endDate: number): void;
@@ -55,6 +57,7 @@ type DrawerProps = {
   handleRemoveAttribute(index: number): void;
   onSubmit(): void;
   onClear(): void;
+  onClose(): void;
 };
 
 const Drawer: React.FC<DrawerProps> = ({
@@ -73,6 +76,7 @@ const Drawer: React.FC<DrawerProps> = ({
   handleRemoveAttribute,
   onSubmit,
   onClear,
+  onClose,
 }) => {
   const theme = useTheme();
 
@@ -93,7 +97,7 @@ const Drawer: React.FC<DrawerProps> = ({
       <Container visible={visible}>
         <Header>
           <h3>Filtrar</h3>
-          <button type="button" onClick={() => {}}>
+          <button type="button" onClick={onClose}>
             <RiCloseLine size={26} color={theme.colors.red.error} />
           </button>
         </Header>
@@ -210,37 +214,73 @@ const Drawer: React.FC<DrawerProps> = ({
                     }
                   />
                   <label
-                    htmlFor="attribute_value"
+                    htmlFor="attribute_name"
                     style={{
                       marginTop: 12,
                     }}
                   >
+                    Operador
+                  </label>
+                  <Select
+                    name="attribute_operator"
+                    onChange={({ value }) =>
+                      handleChangeAttribute(attributeIndex, 'operator', value)
+                    }
+                    placeholder="Operador"
+                    label=""
+                    options={[
+                      {
+                        value: '>',
+                        label: 'Maior',
+                      },
+                      {
+                        value: '<',
+                        label: 'Menor',
+                      },
+                      {
+                        value: '>=',
+                        label: 'Maior ou igual',
+                      },
+                      {
+                        value: '<=',
+                        label: 'Menor ou igual',
+                      },
+                      {
+                        value: '=',
+                        label: 'Igual',
+                      },
+                    ]}
+                  />
+                  <label
+                    htmlFor="attribute_value"
+                    style={{
+                      marginTop: 12,
+                      marginBottom: 5,
+                    }}
+                  >
                     Valores do atributo
                   </label>
-                  <Slider
-                    getAriaLabel={() => 'Valor do atributo'}
-                    value={[attribute.minValue, attribute.maxValue]}
-                    onChange={(_, value) => {
-                      if (typeof value === 'object') {
-                        handleChangeAttribute(
-                          attributeIndex,
-                          'minValue',
-                          value[0],
-                        );
-                        handleChangeAttribute(
-                          attributeIndex,
-                          'maxValue',
-                          value[1],
-                        );
-                      }
+                  <Rating
+                    fractions={2}
+                    emptySymbol={
+                      <FaRegStar
+                        size={40}
+                        style={{ marginRight: 3 }}
+                        color={theme.colors.yellow}
+                      />
+                    }
+                    fullSymbol={
+                      <FaStar
+                        size={40}
+                        style={{ marginRight: 3 }}
+                        color={theme.colors.yellow}
+                      />
+                    }
+                    initialRating={attribute.value}
+                    stop={3}
+                    onChange={(value) => {
+                      handleChangeAttribute(attributeIndex, 'value', value);
                     }}
-                    valueLabelDisplay="auto"
-                    disableSwap={true}
-                    style={{
-                      color: theme.colors.blue,
-                    }}
-                    min={0}
-                    max={6}
                   />
                   <IconButton
                     color="inherit"
